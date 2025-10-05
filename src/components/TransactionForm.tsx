@@ -1,0 +1,205 @@
+import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import Icon from '@/components/ui/icon';
+import { getProducts, createTransaction } from '@/lib/api';
+import { toast } from 'sonner';
+
+interface Product {
+  id: number;
+  name: string;
+  cost_price: number;
+  sale_price: number;
+  margin: number;
+}
+
+interface TransactionFormProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSuccess: () => void;
+}
+
+const TransactionForm = ({ open, onOpenChange, onSuccess }: TransactionFormProps) => {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(false);
+  
+  const [formData, setFormData] = useState({
+    product_id: '',
+    client_telegram: '',
+    client_name: '',
+    status: 'completed',
+    notes: '',
+  });
+
+  useEffect(() => {
+    if (open) {
+      loadProducts();
+    }
+  }, [open]);
+
+  const loadProducts = async () => {
+    try {
+      const result = await getProducts();
+      setProducts(result.products || []);
+    } catch (error) {
+      toast.error('Ошибка загрузки товаров');
+    }
+  };
+
+  const selectedProduct = products.find(p => p.id === parseInt(formData.product_id));
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      await createTransaction({
+        product_id: parseInt(formData.product_id),
+        client_telegram: formData.client_telegram,
+        client_name: formData.client_name,
+        status: formData.status,
+        notes: formData.notes,
+      });
+
+      toast.success('Транзакция создана');
+      onOpenChange(false);
+      resetForm();
+      onSuccess();
+    } catch (error) {
+      toast.error('Ошибка создания транзакции');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      product_id: '',
+      client_telegram: '',
+      client_name: '',
+      status: 'completed',
+      notes: '',
+    });
+  };
+
+  const handleDialogClose = (open: boolean) => {
+    onOpenChange(open);
+    if (!open) {
+      resetForm();
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={handleDialogClose}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Новая транзакция</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="product">Товар</Label>
+            <Select value={formData.product_id} onValueChange={(value) => setFormData({ ...formData, product_id: value })}>
+              <SelectTrigger id="product">
+                <SelectValue placeholder="Выберите товар" />
+              </SelectTrigger>
+              <SelectContent>
+                {products.map((product) => (
+                  <SelectItem key={product.id} value={product.id.toString()}>
+                    {product.name} — ₽{product.sale_price.toLocaleString()}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {selectedProduct && (
+            <div className="p-4 bg-muted/50 rounded-lg space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Цена продажи:</span>
+                <span className="font-semibold">₽{selectedProduct.sale_price.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Себестоимость:</span>
+                <span>₽{selectedProduct.cost_price.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between text-sm pt-2 border-t">
+                <span className="text-muted-foreground">Прибыль:</span>
+                <span className="font-semibold text-green-600">₽{selectedProduct.margin.toLocaleString()}</span>
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <Label htmlFor="client_telegram">Telegram клиента</Label>
+            <Input
+              id="client_telegram"
+              placeholder="@username или оставьте пустым"
+              value={formData.client_telegram}
+              onChange={(e) => setFormData({ ...formData, client_telegram: e.target.value })}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="client_name">Имя клиента (если нет Telegram)</Label>
+            <Input
+              id="client_name"
+              placeholder="Введите имя"
+              value={formData.client_name}
+              onChange={(e) => setFormData({ ...formData, client_name: e.target.value })}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="status">Статус</Label>
+            <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value })}>
+              <SelectTrigger id="status">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="completed">Завершена</SelectItem>
+                <SelectItem value="pending">Ожидает</SelectItem>
+                <SelectItem value="failed">Отклонена</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="notes">Примечания</Label>
+            <Textarea
+              id="notes"
+              placeholder="Дополнительная информация"
+              value={formData.notes}
+              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+              rows={3}
+            />
+          </div>
+
+          <div className="flex gap-2 pt-2">
+            <Button type="submit" className="flex-1" disabled={loading || !formData.product_id}>
+              {loading ? (
+                <>
+                  <Icon name="Loader2" size={16} className="mr-2 animate-spin" />
+                  Создание...
+                </>
+              ) : (
+                <>
+                  <Icon name="Check" size={16} className="mr-2" />
+                  Создать транзакцию
+                </>
+              )}
+            </Button>
+            <Button type="button" variant="outline" onClick={() => handleDialogClose(false)}>
+              Отмена
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+export default TransactionForm;
