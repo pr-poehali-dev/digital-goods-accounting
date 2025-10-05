@@ -26,7 +26,7 @@ interface Transaction {
 }
 
 const Index = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [stats, setStats] = useState({
