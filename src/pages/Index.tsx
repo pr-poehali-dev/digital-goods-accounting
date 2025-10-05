@@ -112,18 +112,18 @@ const Index = () => {
   }, [displayCurrency, exchangeRate]);
 
   const formatCurrency = useCallback((amount: number, currency?: string) => {
-    const converted = convertAmount(amount, currency || 'RUB');
+    const converted = convertAmount(amount || 0, currency || 'RUB');
     const symbol = displayCurrency === 'RUB' ? '₽' : '$';
     return `${converted.toLocaleString('ru-RU', { maximumFractionDigits: 2 })} ${symbol}`;
   }, [displayCurrency, convertAmount]);
 
   const convertedStats = useMemo(() => ({
-    total_revenue: convertAmount(stats.total_revenue),
-    total_costs: convertAmount(stats.total_costs),
-    total_profit: convertAmount(stats.total_profit),
-    total_transactions: stats.total_transactions,
-    completed_count: stats.completed_count,
-    pending_count: stats.pending_count,
+    total_revenue: convertAmount(stats.total_revenue || 0),
+    total_costs: convertAmount(stats.total_costs || 0),
+    total_profit: convertAmount(stats.total_profit || 0),
+    total_transactions: stats.total_transactions || 0,
+    completed_count: stats.completed_count || 0,
+    pending_count: stats.pending_count || 0,
     product_analytics: (stats.product_analytics || []).map((p: any) => ({
       ...p,
       revenue: convertAmount(p.revenue || 0),
