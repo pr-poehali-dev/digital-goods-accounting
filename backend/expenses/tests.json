@@ -1,0 +1,16 @@
+{
+  "tests": [
+    {
+      "name": "Get expense types",
+      "method": "GET",
+      "path": "/?action=types",
+      "expectedStatus": 200
+    },
+    {
+      "name": "Get all expenses",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200
+    }
+  ]
+}

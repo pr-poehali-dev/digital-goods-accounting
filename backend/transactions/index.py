@@ -85,6 +85,53 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'revenue': float(row[3]) if row[3] else 0
                 })
             
+            if daily_analytics:
+                start_date = daily_analytics[-1]['date']
+                end_date = daily_analytics[0]['date']
+                
+                cur.execute("""
+                    SELECT e.id, e.amount, e.start_date, e.end_date, e.distribution_type
+                    FROM expenses e
+                    WHERE e.status = 'active'
+                    AND e.start_date <= '""" + end_date + """'
+                    AND (e.end_date IS NULL OR e.end_date >= '""" + start_date + """')
+                """)
+                expenses = cur.fetchall()
+                
+                daily_expenses_map = {}
+                
+                for exp in expenses:
+                    amount = float(exp[1])
+                    exp_start = exp[2]
+                    exp_end = exp[3]
+                    dist_type = exp[4]
+                    
+                    if dist_type == 'one_time':
+                        date_key = exp_start.isoformat()
+                        if date_key not in daily_expenses_map:
+                            daily_expenses_map[date_key] = 0
+                        daily_expenses_map[date_key] += amount
+                    else:
+                        from datetime import datetime, timedelta
+                        actual_start = max(datetime.strptime(start_date, '%Y-%m-%d').date(), exp_start)
+                        actual_end = min(datetime.strptime(end_date, '%Y-%m-%d').date(), exp_end) if exp_end else datetime.strptime(end_date, '%Y-%m-%d').date()
+                        
+                        days_count = (actual_end - actual_start).days + 1
+                        if days_count > 0:
+                            daily_amount = amount / days_count
+                            
+                            current_date = actual_start
+                            while current_date <= actual_end:
+                                date_key = current_date.isoformat()
+                                if date_key not in daily_expenses_map:
+                                    daily_expenses_map[date_key] = 0
+                                daily_expenses_map[date_key] += daily_amount
+                                current_date += timedelta(days=1)
+                
+                for day in daily_analytics:
+                    day['expenses'] = round(daily_expenses_map.get(day['date'], 0), 2)
+                    day['net_profit'] = round(day['profit'] - day['expenses'], 2)
+            
             cur.close()
             conn.close()
             

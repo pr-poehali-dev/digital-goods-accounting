@@ -1,4 +1,5 @@
 {
+  "expenses": "https://functions.poehali.dev/338f0226-d697-40a5-aef0-26885d9a1f23",
   "transactions": "https://functions.poehali.dev/30786c37-9166-4479-a411-13efbc5df69d",
   "auth": "https://functions.poehali.dev/0fe2adb1-b56f-4acd-aa46-246d52206d4d",
   "products": "https://functions.poehali.dev/52ef1750-02f0-482a-9d19-097377179e96"

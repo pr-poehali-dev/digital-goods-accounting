@@ -10,6 +10,7 @@ import TelegramAuth from '@/components/TelegramAuth';
 import ProductManager from '@/components/ProductManager';
 import TransactionForm from '@/components/TransactionForm';
 import AdminSettings from '@/components/AdminSettings';
+import ExpenseManager from '@/components/ExpenseManager';
 import { getStats, getTransactions } from '@/lib/api';
 import { toast } from 'sonner';
 
@@ -45,7 +46,7 @@ const Index = () => {
     if (isAuthenticated) {
       loadData();
     }
-  }, [isAuthenticated]);
+  }, []);
 
   const loadData = async () => {
     try {
@@ -132,6 +133,10 @@ const Index = () => {
             <TabsTrigger value="products" className="gap-2">
               <Icon name="Package" size={16} />
               Товары
+            </TabsTrigger>
+            <TabsTrigger value="expenses" className="gap-2">
+              <Icon name="DollarSign" size={16} />
+              Расходы
             </TabsTrigger>
             <TabsTrigger value="analytics" className="gap-2">
               <Icon name="TrendingUp" size={16} />
@@ -524,6 +529,8 @@ const Index = () => {
                         <Legend />
                         <Line type="monotone" dataKey="revenue" name="Оборот" stroke="hsl(217, 91%, 60%)" strokeWidth={2} />
                         <Line type="monotone" dataKey="profit" name="Прибыль" stroke="hsl(142, 76%, 36%)" strokeWidth={2} />
+                        <Line type="monotone" dataKey="expenses" name="Расходы" stroke="hsl(0, 84%, 60%)" strokeWidth={2} />
+                        <Line type="monotone" dataKey="net_profit" name="Чистая прибыль" stroke="hsl(142, 76%, 36%)" strokeWidth={3} strokeDasharray="5 5" />
                         <Line type="monotone" dataKey="count" name="Продажи" stroke="hsl(45, 93%, 47%)" strokeWidth={2} />
                       </LineChart>
                     </ResponsiveContainer>
@@ -561,6 +568,10 @@ const Index = () => {
                 </CardContent>
               </Card>
             )}
+          </TabsContent>
+
+          <TabsContent value="expenses">
+            <ExpenseManager />
           </TabsContent>
 
           <TabsContent value="settings">
