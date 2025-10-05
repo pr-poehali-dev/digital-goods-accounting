@@ -71,6 +71,7 @@ export const createTransaction = async (data: {
   client_name?: string;
   status?: string;
   notes?: string;
+  custom_amount?: number;
 }) => {
   const response = await fetch(API_URLS.transactions, {
     method: 'POST',

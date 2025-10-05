@@ -33,6 +33,7 @@ const TransactionForm = ({ open, onOpenChange, onSuccess }: TransactionFormProps
     client_name: '',
     status: 'completed',
     notes: '',
+    custom_amount: '',
   });
 
   useEffect(() => {
@@ -51,6 +52,9 @@ const TransactionForm = ({ open, onOpenChange, onSuccess }: TransactionFormProps
   };
 
   const selectedProduct = products.find(p => p.id === parseInt(formData.product_id));
+  const saleAmount = formData.custom_amount ? parseFloat(formData.custom_amount) : (selectedProduct?.sale_price || 0);
+  const costPrice = selectedProduct?.cost_price || 0;
+  const calculatedProfit = saleAmount - costPrice;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,6 +67,7 @@ const TransactionForm = ({ open, onOpenChange, onSuccess }: TransactionFormProps
         client_name: formData.client_name,
         status: formData.status,
         notes: formData.notes,
+        custom_amount: formData.custom_amount ? parseFloat(formData.custom_amount) : undefined,
       });
 
       toast.success('Транзакция создана');
@@ -83,6 +88,7 @@ const TransactionForm = ({ open, onOpenChange, onSuccess }: TransactionFormProps
       client_name: '',
       status: 'completed',
       notes: '',
+      custom_amount: '',
     });
   };
 
@@ -117,18 +123,30 @@ const TransactionForm = ({ open, onOpenChange, onSuccess }: TransactionFormProps
           </div>
 
           {selectedProduct && (
-            <div className="p-4 bg-muted/50 rounded-lg space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Цена продажи:</span>
-                <span className="font-semibold">₽{selectedProduct.sale_price.toLocaleString()}</span>
+            <div className="space-y-3">
+              <div className="space-y-2">
+                <Label htmlFor="custom_amount">Сумма продажи (необязательно)</Label>
+                <Input
+                  id="custom_amount"
+                  type="number"
+                  placeholder={`₽${selectedProduct.sale_price.toLocaleString()} (базовая цена)`}
+                  value={formData.custom_amount}
+                  onChange={(e) => setFormData({ ...formData, custom_amount: e.target.value })}
+                />
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Себестоимость:</span>
-                <span>₽{selectedProduct.cost_price.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between text-sm pt-2 border-t">
-                <span className="text-muted-foreground">Прибыль:</span>
-                <span className="font-semibold text-green-600">₽{selectedProduct.margin.toLocaleString()}</span>
+              <div className="p-4 bg-muted/50 rounded-lg space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Цена продажи:</span>
+                  <span className="font-semibold">₽{saleAmount.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Себестоимость:</span>
+                  <span>₽{costPrice.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between text-sm pt-2 border-t">
+                  <span className="text-muted-foreground">Прибыль:</span>
+                  <span className="font-semibold text-green-600">₽{calculatedProfit.toLocaleString()}</span>
+                </div>
               </div>
             </div>
           )}

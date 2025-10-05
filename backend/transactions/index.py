@@ -110,6 +110,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         client_name = body_data.get('client_name', '')
         status = body_data.get('status', 'completed')
         notes = body_data.get('notes', '')
+        custom_amount = body_data.get('custom_amount')
         
         cur.execute(
             "SELECT cost_price, sale_price FROM products WHERE id = " + str(product_id)
@@ -127,7 +128,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             }
         
         cost_price = float(product[0])
-        sale_price = float(product[1])
+        sale_price = float(custom_amount) if custom_amount else float(product[1])
         profit = sale_price - cost_price
         
         transaction_code = 'TX-' + datetime.now().strftime('%Y%m%d%H%M%S')

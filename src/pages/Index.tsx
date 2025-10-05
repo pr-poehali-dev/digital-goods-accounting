@@ -147,7 +147,7 @@ const Index = () => {
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                     <Icon name="TrendingUp" size={16} />
-                    Общий доход
+                    Оборот
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
