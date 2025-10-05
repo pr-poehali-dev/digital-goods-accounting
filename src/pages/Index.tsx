@@ -9,6 +9,7 @@ import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, R
 import TelegramAuth from '@/components/TelegramAuth';
 import ProductManager from '@/components/ProductManager';
 import TransactionForm from '@/components/TransactionForm';
+import AdminSettings from '@/components/AdminSettings';
 import { getStats, getTransactions } from '@/lib/api';
 import { toast } from 'sonner';
 
@@ -64,7 +65,9 @@ const Index = () => {
   };
 
   if (!isAuthenticated) {
-    return <TelegramAuth onAuthenticated={() => setIsAuthenticated(true)} />;
+    return <TelegramAuth onAuthenticated={(user) => {
+      setIsAuthenticated(true);
+    }} />;
   }
 
   const revenueByMonth = transactions.reduce((acc, t) => {
@@ -131,6 +134,10 @@ const Index = () => {
             <TabsTrigger value="analytics" className="gap-2">
               <Icon name="TrendingUp" size={16} />
               Аналитика
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="gap-2">
+              <Icon name="Settings" size={16} />
+              Настройки
             </TabsTrigger>
           </TabsList>
 
@@ -444,6 +451,10 @@ const Index = () => {
                 </CardContent>
               </Card>
             )}
+          </TabsContent>
+
+          <TabsContent value="settings">
+            <AdminSettings />
           </TabsContent>
         </Tabs>
       </div>

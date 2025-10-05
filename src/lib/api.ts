@@ -10,11 +10,7 @@ export const checkAuth = async (telegramId: number) => {
 };
 
 export const addAllowedUser = async (telegramId: number, username: string) => {
-  const response = await fetch(API_URLS.auth, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ telegram_id: telegramId, username }),
-  });
+  const response = await fetch(`${API_URLS.auth}?action=add&telegram_id=${telegramId}&username=${username}`);
   return response.json();
 };
 

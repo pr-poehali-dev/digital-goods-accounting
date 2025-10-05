@@ -1,82 +1,99 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import Icon from '@/components/ui/icon';
-import { checkAuth } from '@/lib/api';
 
 interface TelegramAuthProps {
-  onAuthenticated: () => void;
+  onAuthenticated: (user: any) => void;
+}
+
+declare global {
+  interface Window {
+    onTelegramAuth: (user: any) => void;
+  }
 }
 
 const TelegramAuth = ({ onAuthenticated }: TelegramAuthProps) => {
-  const [telegramId, setTelegramId] = useState('');
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const storedId = localStorage.getItem('telegram_id');
-    if (storedId) {
-      handleAuth(storedId);
-    }
-  }, []);
-
-  const handleAuth = async (id: string) => {
-    setLoading(true);
-    setError('');
-
-    try {
-      const result = await checkAuth(parseInt(id));
-      
-      if (result.allowed) {
-        localStorage.setItem('telegram_id', id);
-        onAuthenticated();
-      } else {
-        setError('Доступ запрещен. Обратитесь к администратору.');
+    const storedUser = localStorage.getItem('telegram_user');
+    if (storedUser) {
+      try {
+        const user = JSON.parse(storedUser);
+        onAuthenticated(user);
+      } catch (e) {
+        localStorage.removeItem('telegram_user');
       }
-    } catch (err) {
-      setError('Ошибка подключения. Попробуйте позже.');
-    } finally {
-      setLoading(false);
     }
-  };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (telegramId) {
-      handleAuth(telegramId);
+    window.onTelegramAuth = async (user: any) => {
+      setLoading(true);
+      setError('');
+
+      try {
+        const response = await fetch('https://functions.poehali.dev/0fe2adb1-b56f-4acd-aa46-246d52206d4d', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(user),
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+          localStorage.setItem('telegram_user', JSON.stringify(result.user));
+          onAuthenticated(result.user);
+        } else {
+          setError(result.error || 'Доступ запрещён. Обратитесь к администратору.');
+        }
+      } catch (err) {
+        setError('Ошибка подключения к серверу');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const script = document.createElement('script');
+    script.src = 'https://telegram.org/js/telegram-widget.js?22';
+    script.async = true;
+    script.setAttribute('data-telegram-login', 'YOUR_BOT_USERNAME');
+    script.setAttribute('data-size', 'large');
+    script.setAttribute('data-radius', '8');
+    script.setAttribute('data-onauth', 'onTelegramAuth(user)');
+    script.setAttribute('data-request-access', 'write');
+
+    const container = document.getElementById('telegram-login-container');
+    if (container) {
+      container.innerHTML = '';
+      container.appendChild(script);
     }
-  };
+
+    return () => {
+      if (container) {
+        container.innerHTML = '';
+      }
+    };
+  }, [onAuthenticated]);
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-6">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center mx-auto mb-4">
-            <Icon name="Lock" size={32} className="text-white" />
+            <Icon name="Send" size={32} className="text-white" />
           </div>
           <CardTitle className="text-2xl">Вход в систему</CardTitle>
           <CardDescription>
-            Введите ваш Telegram ID для доступа к админ-панели
+            Войдите через Telegram для доступа к админ-панели
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="telegram_id">Telegram ID</Label>
-              <Input
-                id="telegram_id"
-                type="number"
-                placeholder="123456789"
-                value={telegramId}
-                onChange={(e) => setTelegramId(e.target.value)}
-                disabled={loading}
-              />
-              <p className="text-xs text-muted-foreground">
-                Узнать свой ID можно у бота @userinfobot
-              </p>
-            </div>
+          <div className="space-y-4">
+            {loading && (
+              <div className="flex items-center justify-center py-4">
+                <Icon name="Loader2" size={32} className="animate-spin text-primary" />
+              </div>
+            )}
 
             {error && (
               <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg flex items-start gap-2">
@@ -85,20 +102,21 @@ const TelegramAuth = ({ onAuthenticated }: TelegramAuthProps) => {
               </div>
             )}
 
-            <Button type="submit" className="w-full" disabled={loading || !telegramId}>
-              {loading ? (
-                <>
-                  <Icon name="Loader2" size={16} className="mr-2 animate-spin" />
-                  Проверка доступа...
-                </>
-              ) : (
-                <>
-                  <Icon name="LogIn" size={16} className="mr-2" />
-                  Войти
-                </>
-              )}
-            </Button>
-          </form>
+            <div id="telegram-login-container" className="flex justify-center"></div>
+
+            <div className="mt-6 p-4 bg-muted/50 rounded-lg space-y-2">
+              <p className="text-sm font-medium flex items-center gap-2">
+                <Icon name="Info" size={16} className="text-primary" />
+                Инструкция:
+              </p>
+              <ol className="text-xs text-muted-foreground space-y-1 ml-6 list-decimal">
+                <li>Создайте бота через @BotFather в Telegram</li>
+                <li>Укажите username бота в настройках</li>
+                <li>Добавьте TELEGRAM_BOT_TOKEN в секреты проекта</li>
+                <li>Добавьте свой Telegram ID в белый список</li>
+              </ol>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>
