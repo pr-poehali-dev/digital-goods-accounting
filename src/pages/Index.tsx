@@ -24,11 +24,14 @@ interface Transaction {
   profit: number;
   status: string;
   transaction_date: string;
+  currency?: string;
 }
 
 const Index = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
+  const [displayCurrency, setDisplayCurrency] = useState<'RUB' | 'USD'>('RUB');
+  const [exchangeRate, setExchangeRate] = useState(95.50);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [stats, setStats] = useState({
     total_revenue: 0,
@@ -49,22 +52,78 @@ const Index = () => {
         getTransactions(),
       ]);
       
-      setStats(statsResult);
-      setTransactions(transactionsResult.transactions || []);
+      setStats(prevStats => {
+        if (JSON.stringify(prevStats) === JSON.stringify(statsResult)) {
+          return prevStats;
+        }
+        return statsResult;
+      });
+      
+      setTransactions(prevTrans => {
+        const newTrans = transactionsResult.transactions || [];
+        if (JSON.stringify(prevTrans) === JSON.stringify(newTrans)) {
+          return prevTrans;
+        }
+        return newTrans;
+      });
     } catch (error) {
       toast.error('Ошибка загрузки данных');
     }
   }, []);
 
   useEffect(() => {
-    loadData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (!isAuthenticated) return;
+    
+    let mounted = true;
+    
+    const fetchData = async () => {
+      if (!mounted) return;
+      await loadData();
+    };
+    
+    fetchData();
+    
+    return () => {
+      mounted = false;
+    };
+  }, [isAuthenticated, loadData]);
 
   const handleLogout = () => {
     localStorage.removeItem('telegram_id');
     setIsAuthenticated(false);
   };
+
+  const convertAmount = useCallback((amount: number, fromCurrency: string = 'RUB') => {
+    if (displayCurrency === fromCurrency) return amount;
+    if (displayCurrency === 'USD' && fromCurrency === 'RUB') return amount / exchangeRate;
+    if (displayCurrency === 'RUB' && fromCurrency === 'USD') return amount * exchangeRate;
+    return amount;
+  }, [displayCurrency, exchangeRate]);
+
+  const formatCurrency = useCallback((amount: number, currency?: string) => {
+    const converted = convertAmount(amount, currency || 'RUB');
+    const symbol = displayCurrency === 'RUB' ? '₽' : '$';
+    return `${converted.toLocaleString('ru-RU', { maximumFractionDigits: 2 })} ${symbol}`;
+  }, [displayCurrency, convertAmount]);
+
+  const convertedStats = useMemo(() => ({
+    total_revenue: convertAmount(stats.total_revenue),
+    total_costs: convertAmount(stats.total_costs),
+    total_profit: convertAmount(stats.total_profit),
+    total_transactions: stats.total_transactions,
+    completed_count: stats.completed_count,
+    pending_count: stats.pending_count,
+    product_analytics: stats.product_analytics.map((p: any) => ({
+      ...p,
+      revenue: convertAmount(p.revenue || 0),
+      profit: convertAmount(p.profit || 0),
+    })),
+    daily_analytics: stats.daily_analytics.map((d: any) => ({
+      ...d,
+      revenue: convertAmount(d.revenue || 0),
+      profit: convertAmount(d.profit || 0),
+    })),
+  }), [stats, convertAmount]);
 
   const revenueByMonth = useMemo(() => {
     if (!isAuthenticated) return [];
@@ -72,21 +131,23 @@ const Index = () => {
     return transactions.reduce((acc, t) => {
       const month = new Date(t.transaction_date).toLocaleDateString('ru', { month: 'short' });
       const existing = acc.find(item => item.month === month);
+      const revenue = convertAmount(t.amount, t.currency);
+      const costs = convertAmount(t.amount - t.profit, t.currency);
       
       if (existing) {
-        existing.revenue += t.amount;
-        existing.costs += (t.amount - t.profit);
+        existing.revenue += revenue;
+        existing.costs += costs;
       } else {
         acc.push({
           month,
-          revenue: t.amount,
-          costs: t.amount - t.profit,
+          revenue,
+          costs,
         });
       }
       
       return acc;
     }, [] as Array<{ month: string; revenue: number; costs: number }>);
-  }, [isAuthenticated, transactions]);
+  }, [isAuthenticated, transactions, convertAmount]);
 
   if (!isAuthenticated) {
     return <TelegramAuth onAuthenticated={(user) => {
@@ -109,6 +170,25 @@ const Index = () => {
               </div>
             </div>
             <div className="flex gap-2">
+              <div className="flex items-center gap-2 mr-4 px-3 py-1 bg-muted rounded-lg">
+                <span className="text-sm font-medium">Валюта:</span>
+                <Button 
+                  variant={displayCurrency === 'RUB' ? 'default' : 'ghost'} 
+                  size="sm"
+                  onClick={() => setDisplayCurrency('RUB')}
+                  className="h-7 px-3"
+                >
+                  ₽ RUB
+                </Button>
+                <Button 
+                  variant={displayCurrency === 'USD' ? 'default' : 'ghost'}
+                  size="sm" 
+                  onClick={() => setDisplayCurrency('USD')}
+                  className="h-7 px-3"
+                >
+                  $ USD
+                </Button>
+              </div>
               <Button onClick={() => setTransactionFormOpen(true)} className="bg-primary hover:bg-primary/90">
                 <Icon name="Plus" size={16} className="mr-2" />
                 Новая транзакция
@@ -162,7 +242,7 @@ const Index = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold text-foreground">
-                    ₽{stats.total_revenue.toLocaleString()}
+                    {formatCurrency(convertedStats.total_revenue)}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">Всего продаж</p>
                 </CardContent>
@@ -192,7 +272,7 @@ const Index = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold text-green-600">
-                    ₽{stats.total_profit.toLocaleString()}
+                    {formatCurrency(convertedStats.total_profit)}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">Чистая прибыль</p>
                 </CardContent>
@@ -207,7 +287,7 @@ const Index = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold text-foreground">
-                    ₽{stats.total_costs.toLocaleString()}
+                    {formatCurrency(convertedStats.total_costs)}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">Себестоимость</p>
                 </CardContent>
