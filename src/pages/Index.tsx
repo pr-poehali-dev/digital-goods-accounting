@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Icon from '@/components/ui/icon';
-import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import TelegramAuth from '@/components/TelegramAuth';
 import ProductManager from '@/components/ProductManager';
 import TransactionForm from '@/components/TransactionForm';
@@ -36,6 +36,8 @@ const Index = () => {
     total_transactions: 0,
     completed_count: 0,
     pending_count: 0,
+    product_analytics: [],
+    daily_analytics: [],
   });
   const [transactionFormOpen, setTransactionFormOpen] = useState(false);
 
@@ -64,13 +66,7 @@ const Index = () => {
     setIsAuthenticated(false);
   };
 
-  if (!isAuthenticated) {
-    return <TelegramAuth onAuthenticated={(user) => {
-      setIsAuthenticated(true);
-    }} />;
-  }
-
-  const revenueByMonth = transactions.reduce((acc, t) => {
+  const revenueByMonth = !isAuthenticated ? [] : transactions.reduce((acc, t) => {
     const month = new Date(t.transaction_date).toLocaleDateString('ru', { month: 'short' });
     const existing = acc.find(item => item.month === month);
     
@@ -87,6 +83,12 @@ const Index = () => {
     
     return acc;
   }, [] as Array<{ month: string; revenue: number; costs: number }>);
+
+  if (!isAuthenticated) {
+    return <TelegramAuth onAuthenticated={(user) => {
+      setIsAuthenticated(true);
+    }} />;
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -380,46 +382,154 @@ const Index = () => {
           </TabsContent>
 
           <TabsContent value="analytics" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Средний чек</CardTitle>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Средний чек</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold">
+                  <div className="text-2xl font-bold">
                     ₽{stats.total_transactions > 0 
                       ? (stats.total_revenue / stats.total_transactions).toLocaleString(undefined, { maximumFractionDigits: 0 })
                       : 0
                     }
                   </div>
+                  <p className="text-xs text-muted-foreground mt-1">На транзакцию</p>
                 </CardContent>
               </Card>
 
               <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Средняя маржа</CardTitle>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Средняя маржа</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold text-green-600">
+                  <div className="text-2xl font-bold text-green-600">
                     {stats.total_costs > 0
                       ? ((stats.total_profit / stats.total_costs) * 100).toFixed(1)
                       : 0
                     }%
                   </div>
+                  <p className="text-xs text-muted-foreground mt-1">ROI</p>
                 </CardContent>
               </Card>
 
               <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Конверсия</CardTitle>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Конверсия</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold">
+                  <div className="text-2xl font-bold">
                     {stats.total_transactions > 0
                       ? ((stats.completed_count / stats.total_transactions) * 100).toFixed(1)
                       : 0
                     }%
                   </div>
+                  <p className="text-xs text-muted-foreground mt-1">Завершённых</p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Средняя прибыль</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-green-600">
+                    ₽{stats.completed_count > 0
+                      ? (stats.total_profit / stats.completed_count).toLocaleString(undefined, { maximumFractionDigits: 0 })
+                      : 0
+                    }
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">С продажи</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Icon name="PieChart" size={18} />
+                    Продажи по товарам
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {stats.product_analytics && stats.product_analytics.length > 0 ? (
+                    <div className="space-y-4">
+                      <ResponsiveContainer width="100%" height={250}>
+                        <PieChart>
+                          <Pie
+                            data={stats.product_analytics}
+                            dataKey="total_revenue"
+                            nameKey="name"
+                            cx="50%"
+                            cy="50%"
+                            outerRadius={80}
+                            label={(entry) => `${entry.name}: ₽${entry.total_revenue.toLocaleString()}`}
+                          >
+                            {stats.product_analytics.map((_, index) => (
+                              <Cell key={`cell-${index}`} fill={['hsl(217, 91%, 60%)', 'hsl(142, 76%, 36%)', 'hsl(45, 93%, 47%)', 'hsl(0, 84%, 60%)', 'hsl(262, 83%, 58%)'][index % 5]} />
+                            ))}
+                          </Pie>
+                          <Tooltip />
+                        </PieChart>
+                      </ResponsiveContainer>
+                      <div className="space-y-2">
+                        {stats.product_analytics.map((product: any, index: number) => (
+                          <div key={index} className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
+                            <div>
+                              <p className="font-medium">{product.name}</p>
+                              <p className="text-sm text-muted-foreground">{product.sales_count} продаж</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-semibold text-green-600">₽{product.total_profit.toLocaleString()}</p>
+                              <p className="text-sm text-muted-foreground">прибыль</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-center text-muted-foreground py-8">Нет данных о продажах</p>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Icon name="TrendingUp" size={18} />
+                    Динамика продаж
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {stats.daily_analytics && stats.daily_analytics.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={400}>
+                      <LineChart data={[...stats.daily_analytics].reverse()}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 13%, 91%)" />
+                        <XAxis 
+                          dataKey="date" 
+                          stroke="hsl(215, 16%, 65%)" 
+                          fontSize={12}
+                          tickFormatter={(value) => new Date(value).toLocaleDateString('ru', { day: '2-digit', month: '2-digit' })}
+                        />
+                        <YAxis stroke="hsl(215, 16%, 65%)" fontSize={12} />
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: 'hsl(0, 0%, 100%)',
+                            border: '1px solid hsl(220, 13%, 91%)',
+                            borderRadius: '8px',
+                          }}
+                          labelFormatter={(value) => new Date(value).toLocaleDateString('ru')}
+                        />
+                        <Legend />
+                        <Line type="monotone" dataKey="revenue" name="Оборот" stroke="hsl(217, 91%, 60%)" strokeWidth={2} />
+                        <Line type="monotone" dataKey="profit" name="Прибыль" stroke="hsl(142, 76%, 36%)" strokeWidth={2} />
+                        <Line type="monotone" dataKey="count" name="Продажи" stroke="hsl(45, 93%, 47%)" strokeWidth={2} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <p className="text-center text-muted-foreground py-8">Нет данных о динамике</p>
+                  )}
                 </CardContent>
               </Card>
             </div>

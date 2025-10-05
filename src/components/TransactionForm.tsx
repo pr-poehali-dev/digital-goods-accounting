@@ -71,9 +71,9 @@ const TransactionForm = ({ open, onOpenChange, onSuccess }: TransactionFormProps
       });
 
       toast.success('Транзакция создана');
-      onOpenChange(false);
       resetForm();
       onSuccess();
+      onOpenChange(false);
     } catch (error) {
       toast.error('Ошибка создания транзакции');
     } finally {

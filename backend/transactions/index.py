@@ -47,6 +47,44 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             """)
             stats = cur.fetchone()
             
+            cur.execute("""
+                SELECT p.name, COUNT(*) as sales_count, SUM(t.profit) as total_profit, SUM(t.amount) as total_revenue
+                FROM transactions t
+                LEFT JOIN products p ON t.product_id = p.id
+                WHERE t.status = 'completed'
+                GROUP BY p.name
+                ORDER BY total_profit DESC
+            """)
+            product_stats = cur.fetchall()
+            
+            cur.execute("""
+                SELECT DATE(transaction_date) as date, COUNT(*) as count, SUM(profit) as profit, SUM(amount) as revenue
+                FROM transactions
+                WHERE status = 'completed'
+                GROUP BY DATE(transaction_date)
+                ORDER BY date DESC
+                LIMIT 30
+            """)
+            daily_stats = cur.fetchall()
+            
+            product_analytics = []
+            for row in product_stats:
+                product_analytics.append({
+                    'name': row[0],
+                    'sales_count': row[1],
+                    'total_profit': float(row[2]) if row[2] else 0,
+                    'total_revenue': float(row[3]) if row[3] else 0
+                })
+            
+            daily_analytics = []
+            for row in daily_stats:
+                daily_analytics.append({
+                    'date': row[0].isoformat() if row[0] else None,
+                    'count': row[1],
+                    'profit': float(row[2]) if row[2] else 0,
+                    'revenue': float(row[3]) if row[3] else 0
+                })
+            
             cur.close()
             conn.close()
             
@@ -60,7 +98,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'total_profit': float(stats[3]) if stats[3] else 0,
                     'completed_count': stats[4] or 0,
                     'pending_count': stats[5] or 0,
-                    'failed_count': stats[6] or 0
+                    'failed_count': stats[6] or 0,
+                    'product_analytics': product_analytics,
+                    'daily_analytics': daily_analytics
                 }),
                 'isBase64Encoded': False
             }
