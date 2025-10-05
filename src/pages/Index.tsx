@@ -124,12 +124,12 @@ const Index = () => {
     total_transactions: stats.total_transactions,
     completed_count: stats.completed_count,
     pending_count: stats.pending_count,
-    product_analytics: stats.product_analytics.map((p: any) => ({
+    product_analytics: (stats.product_analytics || []).map((p: any) => ({
       ...p,
       revenue: convertAmount(p.revenue || 0),
       profit: convertAmount(p.profit || 0),
     })),
-    daily_analytics: stats.daily_analytics.map((d: any) => ({
+    daily_analytics: (stats.daily_analytics || []).map((d: any) => ({
       ...d,
       revenue: convertAmount(d.revenue || 0),
       profit: convertAmount(d.profit || 0),
