@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Icon from '@/components/ui/icon';
@@ -33,6 +34,8 @@ const Index = () => {
   const [displayCurrency, setDisplayCurrency] = useState<'RUB' | 'USD'>('RUB');
   const [exchangeRate, setExchangeRate] = useState(95.50);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [dateFilter, setDateFilter] = useState<'today' | 'week' | 'month' | 'custom'>('month');
+  const [customDateRange, setCustomDateRange] = useState({ start: '', end: '' });
   const [stats, setStats] = useState({
     total_revenue: 0,
     total_costs: 0,
@@ -47,8 +50,11 @@ const Index = () => {
 
   const loadData = useCallback(async () => {
     try {
+      const startDate = dateFilter === 'custom' ? customDateRange.start : undefined;
+      const endDate = dateFilter === 'custom' ? customDateRange.end : undefined;
+      
       const [statsResult, transactionsResult, rateResult] = await Promise.all([
-        getStats(),
+        getStats(dateFilter, startDate, endDate),
         getTransactions(),
         getExchangeRate().catch(() => ({ rate: 95.50 })),
       ]);
@@ -74,7 +80,7 @@ const Index = () => {
     } catch (error) {
       toast.error('Ошибка загрузки данных');
     }
-  }, []);
+  }, [dateFilter, customDateRange]);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -237,6 +243,65 @@ const Index = () => {
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
+            <Card className="mb-6">
+              <CardContent className="pt-6">
+                <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
+                  <div className="flex gap-2 flex-wrap">
+                    <Button 
+                      variant={dateFilter === 'today' ? 'default' : 'outline'} 
+                      size="sm"
+                      onClick={() => setDateFilter('today')}
+                    >
+                      <Icon name="Calendar" size={14} className="mr-2" />
+                      Сегодня
+                    </Button>
+                    <Button 
+                      variant={dateFilter === 'week' ? 'default' : 'outline'} 
+                      size="sm"
+                      onClick={() => setDateFilter('week')}
+                    >
+                      <Icon name="CalendarDays" size={14} className="mr-2" />
+                      Неделя
+                    </Button>
+                    <Button 
+                      variant={dateFilter === 'month' ? 'default' : 'outline'} 
+                      size="sm"
+                      onClick={() => setDateFilter('month')}
+                    >
+                      <Icon name="CalendarRange" size={14} className="mr-2" />
+                      Месяц
+                    </Button>
+                    <Button 
+                      variant={dateFilter === 'custom' ? 'default' : 'outline'} 
+                      size="sm"
+                      onClick={() => setDateFilter('custom')}
+                    >
+                      <Icon name="CalendarClock" size={14} className="mr-2" />
+                      Диапазон
+                    </Button>
+                  </div>
+                  
+                  {dateFilter === 'custom' && (
+                    <div className="flex gap-2 items-center">
+                      <Input 
+                        type="date" 
+                        value={customDateRange.start}
+                        onChange={(e) => setCustomDateRange({ ...customDateRange, start: e.target.value })}
+                        className="w-auto"
+                      />
+                      <span className="text-muted-foreground">—</span>
+                      <Input 
+                        type="date" 
+                        value={customDateRange.end}
+                        onChange={(e) => setCustomDateRange({ ...customDateRange, end: e.target.value })}
+                        className="w-auto"
+                      />
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <Card className="border-l-4 border-l-primary animate-fade-in">
                 <CardHeader className="pb-3">

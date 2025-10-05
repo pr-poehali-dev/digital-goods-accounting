@@ -146,67 +146,57 @@ const ProductManager = () => {
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label>Валюта цен</Label>
-                <RadioGroup value={formData.currency} onValueChange={(value) => setFormData({ ...formData, currency: value })}>
-                  <div className="flex items-center space-x-4">
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="RUB" id="currency-rub" />
-                      <Label htmlFor="currency-rub" className="font-normal cursor-pointer">₽ Рубли</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="USD" id="currency-usd" />
-                      <Label htmlFor="currency-usd" className="font-normal cursor-pointer">$ Доллары</Label>
-                    </div>
-                  </div>
-                </RadioGroup>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="cost_price">Себестоимость в рублях (₽)</Label>
-                <Input
-                  id="cost_price"
-                  type="number"
-                  step="0.01"
-                  value={formData.cost_price}
-                  onChange={(e) => setFormData({ ...formData, cost_price: e.target.value })}
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="cost_price_usd">Себестоимость в долларах ($, необязательно)</Label>
-                <Input
-                  id="cost_price_usd"
-                  type="number"
-                  step="0.01"
-                  placeholder="Оставьте пустым, если такая же как в рублях"
-                  value={formData.cost_price_usd}
-                  onChange={(e) => setFormData({ ...formData, cost_price_usd: e.target.value })}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="sale_price">Цена продажи ({formData.currency === 'RUB' ? '₽' : '$'})</Label>
-                <Input
-                  id="sale_price"
-                  type="number"
-                  step="0.01"
-                  value={formData.sale_price}
-                  onChange={(e) => setFormData({ ...formData, sale_price: e.target.value })}
-                  required
-                />
-              </div>
-
-              {formData.cost_price && formData.sale_price && (
-                <div className="p-3 bg-primary/10 rounded-lg">
-                  <p className="text-sm font-medium">
-                    Маржа: {formData.currency === 'RUB' ? '₽' : '$'}{(parseFloat(formData.sale_price) - parseFloat(formData.cost_price)).toFixed(2)}
-                    {' '}
-                    ({(((parseFloat(formData.sale_price) - parseFloat(formData.cost_price)) / parseFloat(formData.cost_price)) * 100).toFixed(1)}%)
-                  </p>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="cost_price">Себестоимость (₽)</Label>
+                  <Input
+                    id="cost_price"
+                    type="number"
+                    step="0.01"
+                    value={formData.cost_price}
+                    onChange={(e) => setFormData({ ...formData, cost_price: e.target.value })}
+                    required
+                  />
                 </div>
-              )}
+
+                <div className="space-y-2">
+                  <Label htmlFor="cost_price_usd">Себестоимость ($)</Label>
+                  <Input
+                    id="cost_price_usd"
+                    type="number"
+                    step="0.01"
+                    placeholder="Необязательно"
+                    value={formData.cost_price_usd}
+                    onChange={(e) => setFormData({ ...formData, cost_price_usd: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="sale_price_rub">Цена продажи (₽)</Label>
+                  <Input
+                    id="sale_price_rub"
+                    type="number"
+                    step="0.01"
+                    value={formData.currency === 'RUB' ? formData.sale_price : ''}
+                    onChange={(e) => setFormData({ ...formData, sale_price: e.target.value, currency: 'RUB' })}
+                    placeholder="Необязательно"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="sale_price_usd">Цена продажи ($)</Label>
+                  <Input
+                    id="sale_price_usd"
+                    type="number"
+                    step="0.01"
+                    value={formData.currency === 'USD' ? formData.sale_price : ''}
+                    onChange={(e) => setFormData({ ...formData, sale_price: e.target.value, currency: 'USD' })}
+                    placeholder="Необязательно"
+                  />
+                </div>
+              </div>
               
               <div className="space-y-2">
                 <Label htmlFor="description">Описание</Label>

@@ -34,7 +34,29 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         action = params.get('action', 'list')
         
         if action == 'stats':
-            cur.execute("""
+            date_filter = params.get('date_filter', 'month')
+            start_date = params.get('start_date')
+            end_date = params.get('end_date')
+            
+            from datetime import datetime, timedelta
+            
+            if date_filter == 'today':
+                today = datetime.now().date()
+                date_condition = f"AND DATE(transaction_date) = '{today.isoformat()}'"
+            elif date_filter == 'week':
+                today = datetime.now().date()
+                week_start = today - timedelta(days=today.weekday())
+                date_condition = f"AND DATE(transaction_date) >= '{week_start.isoformat()}'"
+            elif date_filter == 'month':
+                today = datetime.now().date()
+                month_start = today.replace(day=1)
+                date_condition = f"AND DATE(transaction_date) >= '{month_start.isoformat()}'"
+            elif date_filter == 'custom' and start_date and end_date:
+                date_condition = f"AND DATE(transaction_date) BETWEEN '{start_date}' AND '{end_date}'"
+            else:
+                date_condition = ""
+            
+            cur.execute(f"""
                 SELECT 
                     COUNT(*) as total_transactions,
                     SUM(amount) as total_revenue,
@@ -44,26 +66,26 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending_count,
                     COUNT(CASE WHEN status = 'failed' THEN 1 END) as failed_count
                 FROM transactions
+                WHERE 1=1 {date_condition}
             """)
             stats = cur.fetchone()
             
-            cur.execute("""
+            cur.execute(f"""
                 SELECT p.name, COUNT(*) as sales_count, SUM(t.profit) as total_profit, SUM(t.amount) as total_revenue
                 FROM transactions t
                 LEFT JOIN products p ON t.product_id = p.id
-                WHERE t.status = 'completed'
+                WHERE t.status = 'completed' {date_condition.replace('AND', '')}
                 GROUP BY p.name
                 ORDER BY total_profit DESC
             """)
             product_stats = cur.fetchall()
             
-            cur.execute("""
+            cur.execute(f"""
                 SELECT DATE(transaction_date) as date, COUNT(*) as count, SUM(profit) as profit, SUM(amount) as revenue
                 FROM transactions
-                WHERE status = 'completed'
+                WHERE status = 'completed' {date_condition.replace('AND', '')}
                 GROUP BY DATE(transaction_date)
-                ORDER BY date DESC
-                LIMIT 30
+                ORDER BY date ASC
             """)
             daily_stats = cur.fetchall()
             
