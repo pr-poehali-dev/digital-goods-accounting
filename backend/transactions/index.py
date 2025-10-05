@@ -200,9 +200,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         notes = body_data.get('notes', '')
         custom_amount = body_data.get('custom_amount')
         currency = body_data.get('currency', 'RUB')
+        transaction_date = body_data.get('transaction_date', datetime.now().strftime('%Y-%m-%d'))
         
         cur.execute(
-            "SELECT cost_price, sale_price FROM products WHERE id = " + str(product_id)
+            "SELECT cost_price, sale_price, cost_price_usd FROM products WHERE id = " + str(product_id)
         )
         product = cur.fetchone()
         
@@ -216,14 +217,18 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'isBase64Encoded': False
             }
         
-        cost_price = float(product[0])
+        cost_price_rub = float(product[0])
+        cost_price_usd = float(product[2]) if product[2] else cost_price_rub
+        
+        cost_price = cost_price_usd if currency == 'USD' else cost_price_rub
+        
         sale_price = float(custom_amount) if custom_amount else float(product[1])
         profit = sale_price - cost_price
         
         transaction_code = 'TX-' + datetime.now().strftime('%Y%m%d%H%M%S')
         
         cur.execute(
-            "INSERT INTO transactions (transaction_code, product_id, client_telegram, client_name, amount, cost_price, profit, status, notes, currency) VALUES ('" + transaction_code + "', " + str(product_id) + ", '" + client_telegram + "', '" + client_name + "', " + str(sale_price) + ", " + str(cost_price) + ", " + str(profit) + ", '" + status + "', '" + notes + "', '" + currency + "') RETURNING id"
+            "INSERT INTO transactions (transaction_code, product_id, client_telegram, client_name, amount, cost_price, profit, status, notes, currency, transaction_date) VALUES ('" + transaction_code + "', " + str(product_id) + ", '" + client_telegram + "', '" + client_name + "', " + str(sale_price) + ", " + str(cost_price) + ", " + str(profit) + ", '" + status + "', '" + notes + "', '" + currency + "', '" + transaction_date + "') RETURNING id"
         )
         transaction_id = cur.fetchone()[0]
         

@@ -20,6 +20,7 @@ interface Product {
   margin: number;
   margin_percent: number;
   currency?: string;
+  cost_price_usd?: number;
 }
 
 const ProductManager = () => {
@@ -31,6 +32,7 @@ const ProductManager = () => {
   const [formData, setFormData] = useState({
     name: '',
     cost_price: '',
+    cost_price_usd: '',
     sale_price: '',
     description: '',
     currency: 'RUB',
@@ -58,6 +60,7 @@ const ProductManager = () => {
     const data = {
       name: formData.name,
       cost_price: parseFloat(formData.cost_price),
+      cost_price_usd: formData.cost_price_usd ? parseFloat(formData.cost_price_usd) : null,
       sale_price: parseFloat(formData.sale_price),
       description: formData.description,
       currency: formData.currency,
@@ -85,6 +88,7 @@ const ProductManager = () => {
     setFormData({
       name: product.name,
       cost_price: product.cost_price.toString(),
+      cost_price_usd: product.cost_price_usd ? product.cost_price_usd.toString() : '',
       sale_price: product.sale_price.toString(),
       description: product.description,
       currency: product.currency || 'RUB',
@@ -105,7 +109,7 @@ const ProductManager = () => {
   };
 
   const resetForm = () => {
-    setFormData({ name: '', cost_price: '', sale_price: '', description: '', currency: 'RUB' });
+    setFormData({ name: '', cost_price: '', cost_price_usd: '', sale_price: '', description: '', currency: 'RUB' });
     setEditingProduct(null);
   };
 
@@ -158,30 +162,40 @@ const ProductManager = () => {
                 </RadioGroup>
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="cost_price">Себестоимость ({formData.currency === 'RUB' ? '₽' : '$'})</Label>
-                  <Input
-                    id="cost_price"
-                    type="number"
-                    step="0.01"
-                    value={formData.cost_price}
-                    onChange={(e) => setFormData({ ...formData, cost_price: e.target.value })}
-                    required
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="sale_price">Цена продажи ({formData.currency === 'RUB' ? '₽' : '$'})</Label>
-                  <Input
-                    id="sale_price"
-                    type="number"
-                    step="0.01"
-                    value={formData.sale_price}
-                    onChange={(e) => setFormData({ ...formData, sale_price: e.target.value })}
-                    required
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="cost_price">Себестоимость в рублях (₽)</Label>
+                <Input
+                  id="cost_price"
+                  type="number"
+                  step="0.01"
+                  value={formData.cost_price}
+                  onChange={(e) => setFormData({ ...formData, cost_price: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="cost_price_usd">Себестоимость в долларах ($, необязательно)</Label>
+                <Input
+                  id="cost_price_usd"
+                  type="number"
+                  step="0.01"
+                  placeholder="Оставьте пустым, если такая же как в рублях"
+                  value={formData.cost_price_usd}
+                  onChange={(e) => setFormData({ ...formData, cost_price_usd: e.target.value })}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="sale_price">Цена продажи ({formData.currency === 'RUB' ? '₽' : '$'})</Label>
+                <Input
+                  id="sale_price"
+                  type="number"
+                  step="0.01"
+                  value={formData.sale_price}
+                  onChange={(e) => setFormData({ ...formData, sale_price: e.target.value })}
+                  required
+                />
               </div>
 
               {formData.cost_price && formData.sale_price && (

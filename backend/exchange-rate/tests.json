@@ -1,0 +1,15 @@
+{
+  "tests": [
+    {
+      "name": "Get current USD/RUB rate",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200,
+      "expectedBody": {
+        "rate": "number",
+        "date": "string"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

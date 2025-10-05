@@ -2,6 +2,7 @@ const API_URLS = {
   auth: 'https://functions.poehali.dev/0fe2adb1-b56f-4acd-aa46-246d52206d4d',
   products: 'https://functions.poehali.dev/52ef1750-02f0-482a-9d19-097377179e96',
   transactions: 'https://functions.poehali.dev/30786c37-9166-4479-a411-13efbc5df69d',
+  exchangeRate: 'https://functions.poehali.dev/b1cb12e6-ce2f-49f6-be71-4e60da826523',
 };
 
 export const checkAuth = async (telegramId: number) => {
@@ -75,6 +76,7 @@ export const createTransaction = async (data: {
   notes?: string;
   custom_amount?: number;
   currency?: string;
+  transaction_date?: string;
 }) => {
   const response = await fetch(API_URLS.transactions, {
     method: 'POST',
@@ -90,5 +92,10 @@ export const updateTransactionStatus = async (id: number, status: string) => {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ id, status }),
   });
+  return response.json();
+};
+
+export const getExchangeRate = async () => {
+  const response = await fetch(API_URLS.exchangeRate);
   return response.json();
 };

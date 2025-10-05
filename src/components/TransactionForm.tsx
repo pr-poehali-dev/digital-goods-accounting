@@ -37,6 +37,7 @@ const TransactionForm = ({ open, onOpenChange, onSuccess }: TransactionFormProps
     notes: '',
     custom_amount: '',
     currency: 'RUB',
+    transaction_date: new Date().toISOString().split('T')[0],
   });
 
   useEffect(() => {
@@ -72,6 +73,7 @@ const TransactionForm = ({ open, onOpenChange, onSuccess }: TransactionFormProps
         notes: formData.notes,
         custom_amount: formData.custom_amount ? parseFloat(formData.custom_amount) : undefined,
         currency: formData.currency,
+        transaction_date: formData.transaction_date,
       });
 
       toast.success('Транзакция создана');
@@ -94,6 +96,7 @@ const TransactionForm = ({ open, onOpenChange, onSuccess }: TransactionFormProps
       notes: '',
       custom_amount: '',
       currency: 'RUB',
+      transaction_date: new Date().toISOString().split('T')[0],
     });
   };
 
@@ -172,14 +175,27 @@ const TransactionForm = ({ open, onOpenChange, onSuccess }: TransactionFormProps
             </div>
           )}
 
-          <div className="space-y-2">
-            <Label htmlFor="client_telegram">Telegram клиента</Label>
-            <Input
-              id="client_telegram"
-              placeholder="@username или оставьте пустым"
-              value={formData.client_telegram}
-              onChange={(e) => setFormData({ ...formData, client_telegram: e.target.value })}
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="client_telegram">Telegram клиента</Label>
+              <Input
+                id="client_telegram"
+                placeholder="@username"
+                value={formData.client_telegram}
+                onChange={(e) => setFormData({ ...formData, client_telegram: e.target.value })}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="transaction_date">Дата транзакции</Label>
+              <Input
+                id="transaction_date"
+                type="date"
+                value={formData.transaction_date}
+                onChange={(e) => setFormData({ ...formData, transaction_date: e.target.value })}
+                required
+              />
+            </div>
           </div>
 
           <div className="space-y-2">

@@ -30,7 +30,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     
     if method == 'GET':
         cur.execute(
-            "SELECT id, name, cost_price, sale_price, description, is_active, created_at, currency FROM products WHERE is_active = true ORDER BY name"
+            "SELECT id, name, cost_price, sale_price, description, is_active, created_at, currency, cost_price_usd FROM products WHERE is_active = true ORDER BY name"
         )
         rows = cur.fetchall()
         
@@ -49,7 +49,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'margin': margin,
                 'margin_percent': round(margin_percent, 2),
                 'created_at': row[6].isoformat() if row[6] else None,
-                'currency': row[7] if len(row) > 7 else 'RUB'
+                'currency': row[7] if len(row) > 7 else 'RUB',
+                'cost_price_usd': float(row[8]) if len(row) > 8 and row[8] else None
             })
         
         cur.close()
@@ -66,12 +67,15 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         body_data = json.loads(event.get('body', '{}'))
         name = body_data.get('name', '')
         cost_price = body_data.get('cost_price', 0)
+        cost_price_usd = body_data.get('cost_price_usd')
         sale_price = body_data.get('sale_price', 0)
         description = body_data.get('description', '')
         currency = body_data.get('currency', 'RUB')
         
+        cost_price_usd_str = str(cost_price_usd) if cost_price_usd else 'NULL'
+        
         cur.execute(
-            "INSERT INTO products (name, cost_price, sale_price, description, currency) VALUES ('" + name + "', " + str(cost_price) + ", " + str(sale_price) + ", '" + description + "', '" + currency + "') RETURNING id"
+            "INSERT INTO products (name, cost_price, sale_price, description, currency, cost_price_usd) VALUES ('" + name + "', " + str(cost_price) + ", " + str(sale_price) + ", '" + description + "', '" + currency + "', " + cost_price_usd_str + ") RETURNING id"
         )
         product_id = cur.fetchone()[0]
         
@@ -91,12 +95,15 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         product_id = body_data.get('id')
         name = body_data.get('name', '')
         cost_price = body_data.get('cost_price', 0)
+        cost_price_usd = body_data.get('cost_price_usd')
         sale_price = body_data.get('sale_price', 0)
         description = body_data.get('description', '')
         currency = body_data.get('currency', 'RUB')
         
+        cost_price_usd_str = str(cost_price_usd) if cost_price_usd else 'NULL'
+        
         cur.execute(
-            "UPDATE products SET name = '" + name + "', cost_price = " + str(cost_price) + ", sale_price = " + str(sale_price) + ", description = '" + description + "', currency = '" + currency + "', updated_at = CURRENT_TIMESTAMP WHERE id = " + str(product_id)
+            "UPDATE products SET name = '" + name + "', cost_price = " + str(cost_price) + ", sale_price = " + str(sale_price) + ", description = '" + description + "', currency = '" + currency + "', cost_price_usd = " + cost_price_usd_str + ", updated_at = CURRENT_TIMESTAMP WHERE id = " + str(product_id)
         )
         
         conn.commit()

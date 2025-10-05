@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
@@ -29,6 +30,7 @@ interface Expense {
   end_date: string | null;
   distribution_type: string;
   status: string;
+  currency?: string;
 }
 
 const ExpenseManager = () => {
@@ -50,6 +52,7 @@ const ExpenseManager = () => {
     start_date: new Date().toISOString().split('T')[0],
     end_date: '',
     distribution_type: 'one_time',
+    currency: 'RUB',
   });
 
   useEffect(() => {
@@ -120,6 +123,7 @@ const ExpenseManager = () => {
           start_date: expenseForm.start_date,
           end_date: expenseForm.end_date || null,
           distribution_type: expenseForm.distribution_type,
+          currency: expenseForm.currency,
         }),
       });
 
@@ -132,6 +136,7 @@ const ExpenseManager = () => {
         start_date: new Date().toISOString().split('T')[0],
         end_date: '',
         distribution_type: 'one_time',
+        currency: 'RUB',
       });
       loadData();
     } catch (error) {
@@ -190,7 +195,7 @@ const ExpenseManager = () => {
                   <TableRow key={expense.id}>
                     <TableCell className="font-medium">{expense.expense_type_name}</TableCell>
                     <TableCell className="text-muted-foreground">{expense.description || '—'}</TableCell>
-                    <TableCell className="font-semibold">₽{expense.amount.toLocaleString()}</TableCell>
+                    <TableCell className="font-semibold">{expense.currency === 'USD' ? '$' : '₽'}{expense.amount.toLocaleString()}</TableCell>
                     <TableCell className="text-sm">
                       {new Date(expense.start_date).toLocaleDateString('ru')}
                       {expense.end_date && ` — ${new Date(expense.end_date).toLocaleDateString('ru')}`}
@@ -280,10 +285,27 @@ const ExpenseManager = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="amount">Сумма</Label>
+              <Label>Валюта</Label>
+              <RadioGroup value={expenseForm.currency} onValueChange={(value) => setExpenseForm({ ...expenseForm, currency: value })}>
+                <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="RUB" id="expense-rub" />
+                    <Label htmlFor="expense-rub" className="font-normal cursor-pointer">₽ Рубли</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="USD" id="expense-usd" />
+                    <Label htmlFor="expense-usd" className="font-normal cursor-pointer">$ Доллары</Label>
+                  </div>
+                </div>
+              </RadioGroup>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="amount">Сумма ({expenseForm.currency === 'RUB' ? '₽' : '$'})</Label>
               <Input
                 id="amount"
                 type="number"
+                step="0.01"
                 placeholder="10000"
                 value={expenseForm.amount}
                 onChange={(e) => setExpenseForm({ ...expenseForm, amount: e.target.value })}

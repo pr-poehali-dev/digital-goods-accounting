@@ -11,7 +11,7 @@ import ProductManager from '@/components/ProductManager';
 import TransactionForm from '@/components/TransactionForm';
 import AdminSettings from '@/components/AdminSettings';
 import ExpenseManager from '@/components/ExpenseManager';
-import { getStats, getTransactions } from '@/lib/api';
+import { getStats, getTransactions, getExchangeRate } from '@/lib/api';
 import { toast } from 'sonner';
 
 interface Transaction {
@@ -47,10 +47,15 @@ const Index = () => {
 
   const loadData = useCallback(async () => {
     try {
-      const [statsResult, transactionsResult] = await Promise.all([
+      const [statsResult, transactionsResult, rateResult] = await Promise.all([
         getStats(),
         getTransactions(),
+        getExchangeRate().catch(() => ({ rate: 95.50 })),
       ]);
+      
+      if (rateResult?.rate) {
+        setExchangeRate(rateResult.rate);
+      }
       
       setStats(prevStats => {
         if (JSON.stringify(prevStats) === JSON.stringify(statsResult)) {
