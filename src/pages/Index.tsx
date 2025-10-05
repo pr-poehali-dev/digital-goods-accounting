@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -42,13 +42,7 @@ const Index = () => {
   });
   const [transactionFormOpen, setTransactionFormOpen] = useState(false);
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      loadData();
-    }
-  }, []);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       const [statsResult, transactionsResult] = await Promise.all([
         getStats(),
@@ -60,30 +54,39 @@ const Index = () => {
     } catch (error) {
       toast.error('Ошибка загрузки данных');
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem('telegram_id');
     setIsAuthenticated(false);
   };
 
-  const revenueByMonth = !isAuthenticated ? [] : transactions.reduce((acc, t) => {
-    const month = new Date(t.transaction_date).toLocaleDateString('ru', { month: 'short' });
-    const existing = acc.find(item => item.month === month);
+  const revenueByMonth = useMemo(() => {
+    if (!isAuthenticated) return [];
     
-    if (existing) {
-      existing.revenue += t.amount;
-      existing.costs += (t.amount - t.profit);
-    } else {
-      acc.push({
-        month,
-        revenue: t.amount,
-        costs: t.amount - t.profit,
-      });
-    }
-    
-    return acc;
-  }, [] as Array<{ month: string; revenue: number; costs: number }>);
+    return transactions.reduce((acc, t) => {
+      const month = new Date(t.transaction_date).toLocaleDateString('ru', { month: 'short' });
+      const existing = acc.find(item => item.month === month);
+      
+      if (existing) {
+        existing.revenue += t.amount;
+        existing.costs += (t.amount - t.profit);
+      } else {
+        acc.push({
+          month,
+          revenue: t.amount,
+          costs: t.amount - t.profit,
+        });
+      }
+      
+      return acc;
+    }, [] as Array<{ month: string; revenue: number; costs: number }>);
+  }, [isAuthenticated, transactions]);
 
   if (!isAuthenticated) {
     return <TelegramAuth onAuthenticated={(user) => {
