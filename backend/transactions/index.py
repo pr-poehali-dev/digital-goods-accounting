@@ -155,7 +155,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         cur.execute("""
             SELECT t.id, t.transaction_code, t.product_id, p.name, t.client_telegram, 
                    t.client_name, t.amount, t.cost_price, t.profit, t.status, 
-                   t.transaction_date, t.notes
+                   t.transaction_date, t.notes, t.currency
             FROM transactions t
             LEFT JOIN products p ON t.product_id = p.id
             ORDER BY t.transaction_date DESC
@@ -177,7 +177,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'profit': float(row[8]),
                 'status': row[9],
                 'transaction_date': row[10].isoformat() if row[10] else None,
-                'notes': row[11]
+                'notes': row[11],
+                'currency': row[12] if len(row) > 12 else 'RUB'
             })
         
         cur.close()
@@ -198,6 +199,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         status = body_data.get('status', 'completed')
         notes = body_data.get('notes', '')
         custom_amount = body_data.get('custom_amount')
+        currency = body_data.get('currency', 'RUB')
         
         cur.execute(
             "SELECT cost_price, sale_price FROM products WHERE id = " + str(product_id)
@@ -221,7 +223,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         transaction_code = 'TX-' + datetime.now().strftime('%Y%m%d%H%M%S')
         
         cur.execute(
-            "INSERT INTO transactions (transaction_code, product_id, client_telegram, client_name, amount, cost_price, profit, status, notes) VALUES ('" + transaction_code + "', " + str(product_id) + ", '" + client_telegram + "', '" + client_name + "', " + str(sale_price) + ", " + str(cost_price) + ", " + str(profit) + ", '" + status + "', '" + notes + "') RETURNING id"
+            "INSERT INTO transactions (transaction_code, product_id, client_telegram, client_name, amount, cost_price, profit, status, notes, currency) VALUES ('" + transaction_code + "', " + str(product_id) + ", '" + client_telegram + "', '" + client_name + "', " + str(sale_price) + ", " + str(cost_price) + ", " + str(profit) + ", '" + status + "', '" + notes + "', '" + currency + "') RETURNING id"
         )
         transaction_id = cur.fetchone()[0]
         

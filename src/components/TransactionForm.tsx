@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import Icon from '@/components/ui/icon';
 import { getProducts, createTransaction } from '@/lib/api';
@@ -15,6 +16,7 @@ interface Product {
   cost_price: number;
   sale_price: number;
   margin: number;
+  currency?: string;
 }
 
 interface TransactionFormProps {
@@ -34,6 +36,7 @@ const TransactionForm = ({ open, onOpenChange, onSuccess }: TransactionFormProps
     status: 'completed',
     notes: '',
     custom_amount: '',
+    currency: 'RUB',
   });
 
   useEffect(() => {
@@ -68,6 +71,7 @@ const TransactionForm = ({ open, onOpenChange, onSuccess }: TransactionFormProps
         status: formData.status,
         notes: formData.notes,
         custom_amount: formData.custom_amount ? parseFloat(formData.custom_amount) : undefined,
+        currency: formData.currency,
       });
 
       toast.success('Транзакция создана');
@@ -89,6 +93,7 @@ const TransactionForm = ({ open, onOpenChange, onSuccess }: TransactionFormProps
       status: 'completed',
       notes: '',
       custom_amount: '',
+      currency: 'RUB',
     });
   };
 
@@ -115,7 +120,7 @@ const TransactionForm = ({ open, onOpenChange, onSuccess }: TransactionFormProps
               <SelectContent>
                 {products.map((product) => (
                   <SelectItem key={product.id} value={product.id.toString()}>
-                    {product.name} — ₽{product.sale_price.toLocaleString()}
+                    {product.name} — {product.currency === 'USD' ? '$' : '₽'}{product.sale_price.toLocaleString()}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -125,11 +130,27 @@ const TransactionForm = ({ open, onOpenChange, onSuccess }: TransactionFormProps
           {selectedProduct && (
             <div className="space-y-3">
               <div className="space-y-2">
+                <Label>Валюта платежа</Label>
+                <RadioGroup value={formData.currency} onValueChange={(value) => setFormData({ ...formData, currency: value })}>
+                  <div className="flex items-center space-x-4">
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="RUB" id="payment-rub" />
+                      <Label htmlFor="payment-rub" className="font-normal cursor-pointer">₽ Рубли</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="USD" id="payment-usd" />
+                      <Label htmlFor="payment-usd" className="font-normal cursor-pointer">$ Доллары</Label>
+                    </div>
+                  </div>
+                </RadioGroup>
+              </div>
+              <div className="space-y-2">
                 <Label htmlFor="custom_amount">Сумма продажи (необязательно)</Label>
                 <Input
                   id="custom_amount"
                   type="number"
-                  placeholder={`₽${selectedProduct.sale_price.toLocaleString()} (базовая цена)`}
+                  step="0.01"
+                  placeholder={`${formData.currency === 'USD' ? '$' : '₽'}${selectedProduct.sale_price.toLocaleString()} (базовая цена)`}
                   value={formData.custom_amount}
                   onChange={(e) => setFormData({ ...formData, custom_amount: e.target.value })}
                 />
@@ -137,15 +158,15 @@ const TransactionForm = ({ open, onOpenChange, onSuccess }: TransactionFormProps
               <div className="p-4 bg-muted/50 rounded-lg space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Цена продажи:</span>
-                  <span className="font-semibold">₽{saleAmount.toLocaleString()}</span>
+                  <span className="font-semibold">{formData.currency === 'USD' ? '$' : '₽'}{saleAmount.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Себестоимость:</span>
-                  <span>₽{costPrice.toLocaleString()}</span>
+                  <span>{formData.currency === 'USD' ? '$' : '₽'}{costPrice.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between text-sm pt-2 border-t">
                   <span className="text-muted-foreground">Прибыль:</span>
-                  <span className="font-semibold text-green-600">₽{calculatedProfit.toLocaleString()}</span>
+                  <span className="font-semibold text-green-600">{formData.currency === 'USD' ? '$' : '₽'}{calculatedProfit.toLocaleString()}</span>
                 </div>
               </div>
             </div>

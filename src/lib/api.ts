@@ -24,6 +24,7 @@ export const createProduct = async (data: {
   cost_price: number;
   sale_price: number;
   description: string;
+  currency?: string;
 }) => {
   const response = await fetch(API_URLS.products, {
     method: 'POST',
@@ -39,6 +40,7 @@ export const updateProduct = async (data: {
   cost_price: number;
   sale_price: number;
   description: string;
+  currency?: string;
 }) => {
   const response = await fetch(API_URLS.products, {
     method: 'PUT',
@@ -72,6 +74,7 @@ export const createTransaction = async (data: {
   status?: string;
   notes?: string;
   custom_amount?: number;
+  currency?: string;
 }) => {
   const response = await fetch(API_URLS.transactions, {
     method: 'POST',

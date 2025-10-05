@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import Icon from '@/components/ui/icon';
@@ -18,6 +19,7 @@ interface Product {
   description: string;
   margin: number;
   margin_percent: number;
+  currency?: string;
 }
 
 const ProductManager = () => {
@@ -31,6 +33,7 @@ const ProductManager = () => {
     cost_price: '',
     sale_price: '',
     description: '',
+    currency: 'RUB',
   });
 
   useEffect(() => {
@@ -57,6 +60,7 @@ const ProductManager = () => {
       cost_price: parseFloat(formData.cost_price),
       sale_price: parseFloat(formData.sale_price),
       description: formData.description,
+      currency: formData.currency,
     };
 
     try {
@@ -83,6 +87,7 @@ const ProductManager = () => {
       cost_price: product.cost_price.toString(),
       sale_price: product.sale_price.toString(),
       description: product.description,
+      currency: product.currency || 'RUB',
     });
     setDialogOpen(true);
   };
@@ -100,7 +105,7 @@ const ProductManager = () => {
   };
 
   const resetForm = () => {
-    setFormData({ name: '', cost_price: '', sale_price: '', description: '' });
+    setFormData({ name: '', cost_price: '', sale_price: '', description: '', currency: 'RUB' });
     setEditingProduct(null);
   };
 
@@ -136,10 +141,26 @@ const ProductManager = () => {
                   required
                 />
               </div>
+
+              <div className="space-y-2">
+                <Label>Валюта цен</Label>
+                <RadioGroup value={formData.currency} onValueChange={(value) => setFormData({ ...formData, currency: value })}>
+                  <div className="flex items-center space-x-4">
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="RUB" id="currency-rub" />
+                      <Label htmlFor="currency-rub" className="font-normal cursor-pointer">₽ Рубли</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="USD" id="currency-usd" />
+                      <Label htmlFor="currency-usd" className="font-normal cursor-pointer">$ Доллары</Label>
+                    </div>
+                  </div>
+                </RadioGroup>
+              </div>
               
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="cost_price">Себестоимость (₽)</Label>
+                  <Label htmlFor="cost_price">Себестоимость ({formData.currency === 'RUB' ? '₽' : '$'})</Label>
                   <Input
                     id="cost_price"
                     type="number"
@@ -151,7 +172,7 @@ const ProductManager = () => {
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="sale_price">Цена продажи (₽)</Label>
+                  <Label htmlFor="sale_price">Цена продажи ({formData.currency === 'RUB' ? '₽' : '$'})</Label>
                   <Input
                     id="sale_price"
                     type="number"
@@ -166,7 +187,7 @@ const ProductManager = () => {
               {formData.cost_price && formData.sale_price && (
                 <div className="p-3 bg-primary/10 rounded-lg">
                   <p className="text-sm font-medium">
-                    Маржа: ₽{(parseFloat(formData.sale_price) - parseFloat(formData.cost_price)).toFixed(2)}
+                    Маржа: {formData.currency === 'RUB' ? '₽' : '$'}{(parseFloat(formData.sale_price) - parseFloat(formData.cost_price)).toFixed(2)}
                     {' '}
                     ({(((parseFloat(formData.sale_price) - parseFloat(formData.cost_price)) / parseFloat(formData.cost_price)) * 100).toFixed(1)}%)
                   </p>
@@ -223,9 +244,9 @@ const ProductManager = () => {
                       )}
                     </div>
                   </TableCell>
-                  <TableCell className="text-right">₽{product.cost_price.toLocaleString()}</TableCell>
-                  <TableCell className="text-right font-semibold">₽{product.sale_price.toLocaleString()}</TableCell>
-                  <TableCell className="text-right text-green-600">₽{product.margin.toLocaleString()}</TableCell>
+                  <TableCell className="text-right">{product.currency === 'USD' ? '$' : '₽'}{product.cost_price.toLocaleString()}</TableCell>
+                  <TableCell className="text-right font-semibold">{product.currency === 'USD' ? '$' : '₽'}{product.sale_price.toLocaleString()}</TableCell>
+                  <TableCell className="text-right text-green-600">{product.currency === 'USD' ? '$' : '₽'}{product.margin.toLocaleString()}</TableCell>
                   <TableCell className="text-right">
                     <span className="text-sm font-medium">{product.margin_percent.toFixed(1)}%</span>
                   </TableCell>
