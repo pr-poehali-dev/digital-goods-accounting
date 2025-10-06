@@ -126,7 +126,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 end_date = daily_analytics[0]['date']
                 
                 cur.execute("""
-                    SELECT e.id, e.amount, e.start_date, e.end_date, e.distribution_type
+                    SELECT e.id, e.amount, e.start_date, e.end_date, e.distribution_type, e.currency
                     FROM expenses e
                     WHERE e.status = 'active'
                     AND e.start_date <= '""" + end_date + """'
@@ -141,6 +141,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     exp_start = exp[2]
                     exp_end = exp[3]
                     dist_type = exp[4]
+                    currency = exp[5] if len(exp) > 5 and exp[5] else 'RUB'
+                    
+                    if currency == 'USD':
+                        amount = amount * exchange_rate
                     
                     if dist_type == 'one_time':
                         date_key = exp_start.isoformat()
