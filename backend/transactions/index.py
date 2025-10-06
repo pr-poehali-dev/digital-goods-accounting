@@ -181,8 +181,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 })
             
             if daily_analytics:
-                start_date = daily_analytics[-1]['date']
-                end_date = daily_analytics[0]['date']
+                start_date = daily_analytics[0]['date']
+                end_date = daily_analytics[-1]['date']
                 
                 cur.execute("""
                     SELECT e.id, e.amount, e.start_date, e.end_date, e.distribution_type, e.currency
