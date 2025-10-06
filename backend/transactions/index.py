@@ -80,6 +80,65 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             """)
             stats = cur.fetchone()
             
+            total_expenses = 0
+            if date_filter == 'all':
+                cur.execute(f"""
+                    SELECT SUM(CASE WHEN currency = 'USD' THEN amount * {exchange_rate} ELSE amount END)
+                    FROM expenses
+                    WHERE status = 'active'
+                """)
+                exp_result = cur.fetchone()
+                total_expenses = float(exp_result[0]) if exp_result and exp_result[0] else 0
+            else:
+                filter_start = None
+                filter_end = None
+                
+                if date_filter == 'today':
+                    filter_start = filter_end = today.isoformat()
+                elif date_filter == 'week':
+                    filter_start = week_start.isoformat()
+                    filter_end = today.isoformat()
+                elif date_filter == 'month':
+                    filter_start = month_start.isoformat()
+                    filter_end = today.isoformat()
+                elif date_filter == 'custom' and start_date and end_date:
+                    filter_start = start_date
+                    filter_end = end_date
+                
+                if filter_start and filter_end:
+                    cur.execute(f"""
+                        SELECT e.amount, e.start_date, e.end_date, e.distribution_type, e.currency
+                        FROM expenses e
+                        WHERE e.status = 'active'
+                        AND e.start_date <= '{filter_end}'
+                        AND (e.end_date IS NULL OR e.end_date >= '{filter_start}')
+                    """)
+                    expenses_for_period = cur.fetchall()
+                    
+                    for exp in expenses_for_period:
+                        amount = float(exp[0])
+                        exp_start = exp[1]
+                        exp_end = exp[2]
+                        dist_type = exp[3]
+                        currency = exp[4] if len(exp) > 4 and exp[4] else 'RUB'
+                        
+                        if currency == 'USD':
+                            amount = amount * exchange_rate
+                        
+                        if dist_type == 'one_time':
+                            exp_date_str = exp_start.isoformat()
+                            if filter_start <= exp_date_str <= filter_end:
+                                total_expenses += amount
+                        else:
+                            actual_start = max(datetime.strptime(filter_start, '%Y-%m-%d').date(), exp_start)
+                            actual_end = min(datetime.strptime(filter_end, '%Y-%m-%d').date(), exp_end) if exp_end else datetime.strptime(filter_end, '%Y-%m-%d').date()
+                            
+                            total_period_days = (exp_end - exp_start).days + 1 if exp_end else 365
+                            filter_period_days = (actual_end - actual_start).days + 1
+                            
+                            if filter_period_days > 0:
+                                total_expenses += (amount / total_period_days) * filter_period_days
+            
             cur.execute(f"""
                 SELECT p.name, COUNT(*) as sales_count, 
                     SUM(CASE WHEN t.currency = 'USD' THEN t.profit * {exchange_rate} ELSE t.profit END) as total_profit, 
@@ -185,14 +244,19 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'currency': exp[5] if len(exp) > 5 and exp[5] else 'N/A'
                 })
             
+            transaction_costs = float(stats[2]) if stats[2] else 0
+            total_costs_with_expenses = transaction_costs + total_expenses
+            revenue = float(stats[1]) if stats[1] else 0
+            total_profit_adjusted = revenue - total_costs_with_expenses
+            
             return {
                 'statusCode': 200,
                 'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
                 'body': json.dumps({
                     'total_transactions': stats[0] or 0,
-                    'total_revenue': float(stats[1]) if stats[1] else 0,
-                    'total_costs': float(stats[2]) if stats[2] else 0,
-                    'total_profit': float(stats[3]) if stats[3] else 0,
+                    'total_revenue': revenue,
+                    'total_costs': total_costs_with_expenses,
+                    'total_profit': total_profit_adjusted,
                     'completed_count': stats[4] or 0,
                     'pending_count': stats[5] or 0,
                     'failed_count': stats[6] or 0,
