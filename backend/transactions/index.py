@@ -211,13 +211,17 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                             daily_expenses_map[date_key] = 0
                         daily_expenses_map[date_key] += amount
                     else:
-                        actual_start = max(datetime.strptime(start_date, '%Y-%m-%d').date(), exp_start)
-                        actual_end = min(datetime.strptime(end_date, '%Y-%m-%d').date(), exp_end) if exp_end else datetime.strptime(end_date, '%Y-%m-%d').date()
+                        chart_start = datetime.strptime(start_date, '%Y-%m-%d').date()
+                        chart_end = datetime.strptime(end_date, '%Y-%m-%d').date()
                         
-                        days_count = (actual_end - actual_start).days + 1
-                        if days_count > 0:
-                            daily_amount = amount / days_count
-                            
+                        actual_start = max(chart_start, exp_start)
+                        actual_end = min(chart_end, exp_end) if exp_end else chart_end
+                        
+                        total_expense_days = (exp_end - exp_start).days + 1 if exp_end else 365
+                        daily_amount = amount / total_expense_days
+                        
+                        overlap_days = (actual_end - actual_start).days + 1
+                        if overlap_days > 0:
                             current_date = actual_start
                             while current_date <= actual_end:
                                 date_key = current_date.isoformat()
