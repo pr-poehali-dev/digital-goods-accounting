@@ -142,6 +142,8 @@ const Index = () => {
       ...d,
       revenue: convertAmount(d.revenue || 0),
       profit: convertAmount(d.profit || 0),
+      expenses: convertAmount(d.expenses || 0),
+      net_profit: convertAmount(d.net_profit || 0),
     })),
   }), [stats, convertAmount]);
 
@@ -153,7 +155,7 @@ const Index = () => {
     return last7Days.map((day: any) => ({
       date: new Date(day.date).toLocaleDateString('ru', { day: 'numeric', month: 'short' }),
       revenue: day.revenue || 0,
-      costs: (day.revenue || 0) - (day.profit || 0),
+      costs: ((day.revenue || 0) - (day.profit || 0)) + (day.expenses || 0),
       profit: day.profit || 0,
     }));
   }, [convertedStats]);
