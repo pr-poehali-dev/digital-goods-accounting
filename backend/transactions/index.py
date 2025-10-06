@@ -134,6 +134,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 """)
                 expenses = cur.fetchall()
                 
+                print(f"DEBUG: Found {len(expenses)} expenses")
+                for e in expenses:
+                    print(f"DEBUG: Expense - amount: {e[1]}, start: {e[2]}, end: {e[3]}, type: {e[4]}, currency: {e[5] if len(e) > 5 else 'N/A'}")
+                
                 daily_expenses_map = {}
                 
                 for exp in expenses:
