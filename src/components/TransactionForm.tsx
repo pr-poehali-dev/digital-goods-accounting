@@ -17,6 +17,8 @@ interface Product {
   sale_price: number;
   margin: number;
   currency?: string;
+  cost_price_usd?: number;
+  sale_price_usd?: number;
 }
 
 interface TransactionFormProps {
@@ -56,8 +58,24 @@ const TransactionForm = ({ open, onOpenChange, onSuccess }: TransactionFormProps
   };
 
   const selectedProduct = products.find(p => p.id === parseInt(formData.product_id));
-  const saleAmount = formData.custom_amount ? parseFloat(formData.custom_amount) : (selectedProduct?.sale_price || 0);
-  const costPrice = selectedProduct?.cost_price || 0;
+  
+  const getSalePrice = () => {
+    if (formData.custom_amount) return parseFloat(formData.custom_amount);
+    if (!selectedProduct) return 0;
+    return formData.currency === 'USD' 
+      ? (selectedProduct.sale_price_usd || selectedProduct.sale_price) 
+      : selectedProduct.sale_price;
+  };
+  
+  const getCostPrice = () => {
+    if (!selectedProduct) return 0;
+    return formData.currency === 'USD'
+      ? (selectedProduct.cost_price_usd || selectedProduct.cost_price)
+      : selectedProduct.cost_price;
+  };
+  
+  const saleAmount = getSalePrice();
+  const costPrice = getCostPrice();
   const calculatedProfit = saleAmount - costPrice;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -123,7 +141,7 @@ const TransactionForm = ({ open, onOpenChange, onSuccess }: TransactionFormProps
               <SelectContent>
                 {products.map((product) => (
                   <SelectItem key={product.id} value={product.id.toString()}>
-                    {product.name} — {product.currency === 'USD' ? '$' : '₽'}{product.sale_price.toLocaleString()}
+                    {product.name} — ₽{product.sale_price.toLocaleString()}{product.sale_price_usd ? ` / $${product.sale_price_usd.toLocaleString()}` : ''}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -153,7 +171,7 @@ const TransactionForm = ({ open, onOpenChange, onSuccess }: TransactionFormProps
                   id="custom_amount"
                   type="number"
                   step="0.01"
-                  placeholder={`${formData.currency === 'USD' ? '$' : '₽'}${selectedProduct.sale_price.toLocaleString()} (базовая цена)`}
+                  placeholder={`${formData.currency === 'USD' ? '$' : '₽'}${getSalePrice().toLocaleString()} (базовая цена)`}
                   value={formData.custom_amount}
                   onChange={(e) => setFormData({ ...formData, custom_amount: e.target.value })}
                 />

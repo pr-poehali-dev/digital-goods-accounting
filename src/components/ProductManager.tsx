@@ -21,6 +21,7 @@ interface Product {
   margin_percent: number;
   currency?: string;
   cost_price_usd?: number;
+  sale_price_usd?: number;
 }
 
 const ProductManager = () => {
@@ -34,8 +35,8 @@ const ProductManager = () => {
     cost_price: '',
     cost_price_usd: '',
     sale_price: '',
+    sale_price_usd: '',
     description: '',
-    currency: 'RUB',
   });
 
   useEffect(() => {
@@ -62,8 +63,8 @@ const ProductManager = () => {
       cost_price: parseFloat(formData.cost_price),
       cost_price_usd: formData.cost_price_usd ? parseFloat(formData.cost_price_usd) : null,
       sale_price: parseFloat(formData.sale_price),
+      sale_price_usd: formData.sale_price_usd ? parseFloat(formData.sale_price_usd) : null,
       description: formData.description,
-      currency: formData.currency,
     };
 
     try {
@@ -90,8 +91,8 @@ const ProductManager = () => {
       cost_price: product.cost_price.toString(),
       cost_price_usd: product.cost_price_usd ? product.cost_price_usd.toString() : '',
       sale_price: product.sale_price.toString(),
+      sale_price_usd: product.sale_price_usd ? product.sale_price_usd.toString() : '',
       description: product.description,
-      currency: product.currency || 'RUB',
     });
     setDialogOpen(true);
   };
@@ -109,7 +110,7 @@ const ProductManager = () => {
   };
 
   const resetForm = () => {
-    setFormData({ name: '', cost_price: '', cost_price_usd: '', sale_price: '', description: '', currency: 'RUB' });
+    setFormData({ name: '', cost_price: '', cost_price_usd: '', sale_price: '', sale_price_usd: '', description: '' });
     setEditingProduct(null);
   };
 
@@ -174,14 +175,14 @@ const ProductManager = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="sale_price_rub">Цена продажи (₽)</Label>
+                  <Label htmlFor="sale_price">Цена продажи (₽)</Label>
                   <Input
-                    id="sale_price_rub"
+                    id="sale_price"
                     type="number"
                     step="0.01"
-                    value={formData.currency === 'RUB' ? formData.sale_price : ''}
-                    onChange={(e) => setFormData({ ...formData, sale_price: e.target.value, currency: 'RUB' })}
-                    placeholder="Необязательно"
+                    value={formData.sale_price}
+                    onChange={(e) => setFormData({ ...formData, sale_price: e.target.value })}
+                    required
                   />
                 </div>
 
@@ -191,9 +192,9 @@ const ProductManager = () => {
                     id="sale_price_usd"
                     type="number"
                     step="0.01"
-                    value={formData.currency === 'USD' ? formData.sale_price : ''}
-                    onChange={(e) => setFormData({ ...formData, sale_price: e.target.value, currency: 'USD' })}
                     placeholder="Необязательно"
+                    value={formData.sale_price_usd}
+                    onChange={(e) => setFormData({ ...formData, sale_price_usd: e.target.value })}
                   />
                 </div>
               </div>

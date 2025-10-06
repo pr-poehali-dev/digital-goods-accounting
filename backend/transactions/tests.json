@@ -3,7 +3,7 @@
     {
       "name": "Get transaction statistics",
       "method": "GET",
-      "path": "/?action=stats",
+      "path": "/?action=stats&date_filter=all",
       "expectedStatus": 200
     },
     {

@@ -1,0 +1,1 @@
+ALTER TABLE products ADD COLUMN IF NOT EXISTS sale_price_usd NUMERIC(10, 2);

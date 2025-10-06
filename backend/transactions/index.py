@@ -42,17 +42,19 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             if date_filter == 'today':
                 today = datetime.now().date()
-                date_condition = f"AND DATE(transaction_date) = '{today.isoformat()}'"
+                date_condition = f"AND transaction_date::date = '{today.isoformat()}'"
             elif date_filter == 'week':
                 today = datetime.now().date()
                 week_start = today - timedelta(days=today.weekday())
-                date_condition = f"AND DATE(transaction_date) >= '{week_start.isoformat()}'"
+                date_condition = f"AND transaction_date::date >= '{week_start.isoformat()}'"
             elif date_filter == 'month':
                 today = datetime.now().date()
                 month_start = today.replace(day=1)
-                date_condition = f"AND DATE(transaction_date) >= '{month_start.isoformat()}'"
+                date_condition = f"AND transaction_date::date >= '{month_start.isoformat()}'"
             elif date_filter == 'custom' and start_date and end_date:
-                date_condition = f"AND DATE(transaction_date) BETWEEN '{start_date}' AND '{end_date}'"
+                date_condition = f"AND transaction_date::date BETWEEN '{start_date}' AND '{end_date}'"
+            elif date_filter == 'all':
+                date_condition = ""
             else:
                 date_condition = ""
             
@@ -81,10 +83,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             product_stats = cur.fetchall()
             
             cur.execute(f"""
-                SELECT DATE(transaction_date) as date, COUNT(*) as count, SUM(profit) as profit, SUM(amount) as revenue
+                SELECT transaction_date::date as date, COUNT(*) as count, SUM(profit) as profit, SUM(amount) as revenue
                 FROM transactions
                 WHERE status = 'completed' {date_condition.replace('AND', '')}
-                GROUP BY DATE(transaction_date)
+                GROUP BY transaction_date::date
                 ORDER BY date ASC
             """)
             daily_stats = cur.fetchall()
@@ -225,7 +227,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         transaction_date = body_data.get('transaction_date', datetime.now().strftime('%Y-%m-%d'))
         
         cur.execute(
-            "SELECT cost_price, sale_price, cost_price_usd FROM products WHERE id = " + str(product_id)
+            "SELECT cost_price, sale_price, cost_price_usd, sale_price_usd FROM products WHERE id = " + str(product_id)
         )
         product = cur.fetchone()
         
@@ -240,11 +242,17 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             }
         
         cost_price_rub = float(product[0])
-        cost_price_usd = float(product[2]) if product[2] else cost_price_rub
+        sale_price_rub = float(product[1])
+        cost_price_usd = float(product[2]) if product[2] else None
+        sale_price_usd = float(product[3]) if product[3] else None
         
-        cost_price = cost_price_usd if currency == 'USD' else cost_price_rub
+        if currency == 'USD':
+            cost_price = cost_price_usd if cost_price_usd else cost_price_rub
+            sale_price = float(custom_amount) if custom_amount else (sale_price_usd if sale_price_usd else sale_price_rub)
+        else:
+            cost_price = cost_price_rub
+            sale_price = float(custom_amount) if custom_amount else sale_price_rub
         
-        sale_price = float(custom_amount) if custom_amount else float(product[1])
         profit = sale_price - cost_price
         
         transaction_code = 'TX-' + datetime.now().strftime('%Y%m%d%H%M%S')

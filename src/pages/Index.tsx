@@ -34,7 +34,7 @@ const Index = () => {
   const [displayCurrency, setDisplayCurrency] = useState<'RUB' | 'USD'>('RUB');
   const [exchangeRate, setExchangeRate] = useState(95.50);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [dateFilter, setDateFilter] = useState<'today' | 'week' | 'month' | 'custom'>('month');
+  const [dateFilter, setDateFilter] = useState<'today' | 'week' | 'month' | 'all' | 'custom'>('all');
   const [customDateRange, setCustomDateRange] = useState({ start: '', end: '' });
   const [stats, setStats] = useState({
     total_revenue: 0,
@@ -247,6 +247,14 @@ const Index = () => {
               <CardContent className="pt-6">
                 <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
                   <div className="flex gap-2 flex-wrap">
+                    <Button 
+                      variant={dateFilter === 'all' ? 'default' : 'outline'} 
+                      size="sm"
+                      onClick={() => setDateFilter('all')}
+                    >
+                      <Icon name="Infinity" size={14} className="mr-2" />
+                      Все время
+                    </Button>
                     <Button 
                       variant={dateFilter === 'today' ? 'default' : 'outline'} 
                       size="sm"
