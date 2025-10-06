@@ -1,6 +1,7 @@
 import json
 import os
 import psycopg2
+import urllib.request
 from typing import Dict, Any
 from datetime import datetime, timedelta
 
@@ -38,6 +39,15 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             start_date = params.get('start_date')
             end_date = params.get('end_date')
             
+            exchange_rate = 95.5
+            try:
+                url = 'https://www.cbr-xml-daily.ru/daily_json.js'
+                with urllib.request.urlopen(url, timeout=3) as response:
+                    data = json.loads(response.read().decode())
+                    exchange_rate = data['Valute']['USD']['Value']
+            except:
+                pass
+            
             if date_filter == 'today':
                 today = datetime.now().date()
                 date_condition = f"AND transaction_date::date = '{today.isoformat()}'"
@@ -59,9 +69,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             cur.execute(f"""
                 SELECT 
                     COUNT(*) as total_transactions,
-                    SUM(CASE WHEN currency = 'USD' THEN amount * 95.5 ELSE amount END) as total_revenue,
-                    SUM(CASE WHEN currency = 'USD' THEN cost_price * 95.5 ELSE cost_price END) as total_costs,
-                    SUM(CASE WHEN currency = 'USD' THEN profit * 95.5 ELSE profit END) as total_profit,
+                    SUM(CASE WHEN currency = 'USD' THEN amount * {exchange_rate} ELSE amount END) as total_revenue,
+                    SUM(CASE WHEN currency = 'USD' THEN cost_price * {exchange_rate} ELSE cost_price END) as total_costs,
+                    SUM(CASE WHEN currency = 'USD' THEN profit * {exchange_rate} ELSE profit END) as total_profit,
                     COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed_count,
                     COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending_count,
                     COUNT(CASE WHEN status = 'failed' THEN 1 END) as failed_count
@@ -72,8 +82,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             cur.execute(f"""
                 SELECT p.name, COUNT(*) as sales_count, 
-                    SUM(CASE WHEN t.currency = 'USD' THEN t.profit * 95.5 ELSE t.profit END) as total_profit, 
-                    SUM(CASE WHEN t.currency = 'USD' THEN t.amount * 95.5 ELSE t.amount END) as total_revenue
+                    SUM(CASE WHEN t.currency = 'USD' THEN t.profit * {exchange_rate} ELSE t.profit END) as total_profit, 
+                    SUM(CASE WHEN t.currency = 'USD' THEN t.amount * {exchange_rate} ELSE t.amount END) as total_revenue
                 FROM transactions t
                 LEFT JOIN products p ON t.product_id = p.id
                 WHERE t.status = 'completed' {date_condition.replace('AND', '')}
@@ -84,8 +94,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             cur.execute(f"""
                 SELECT transaction_date::date as date, COUNT(*) as count, 
-                    SUM(CASE WHEN currency = 'USD' THEN profit * 95.5 ELSE profit END) as profit, 
-                    SUM(CASE WHEN currency = 'USD' THEN amount * 95.5 ELSE amount END) as revenue
+                    SUM(CASE WHEN currency = 'USD' THEN profit * {exchange_rate} ELSE profit END) as profit, 
+                    SUM(CASE WHEN currency = 'USD' THEN amount * {exchange_rate} ELSE amount END) as revenue
                 FROM transactions
                 WHERE status = 'completed' {date_condition.replace('AND', '')}
                 GROUP BY transaction_date::date
