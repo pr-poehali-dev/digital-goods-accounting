@@ -2,7 +2,7 @@ import json
 import os
 import psycopg2
 from typing import Dict, Any
-from datetime import datetime
+from datetime import datetime, timedelta
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     '''
@@ -37,8 +37,6 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             date_filter = params.get('date_filter', 'month')
             start_date = params.get('start_date')
             end_date = params.get('end_date')
-            
-            from datetime import datetime, timedelta
             
             if date_filter == 'today':
                 today = datetime.now().date()
@@ -136,7 +134,6 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                             daily_expenses_map[date_key] = 0
                         daily_expenses_map[date_key] += amount
                     else:
-                        from datetime import datetime, timedelta
                         actual_start = max(datetime.strptime(start_date, '%Y-%m-%d').date(), exp_start)
                         actual_end = min(datetime.strptime(end_date, '%Y-%m-%d').date(), exp_end) if exp_end else datetime.strptime(end_date, '%Y-%m-%d').date()
                         
