@@ -120,7 +120,10 @@ const Index = () => {
   const formatCurrency = useCallback((amount: number, currency?: string) => {
     const converted = convertAmount(amount || 0, currency || 'RUB');
     const symbol = displayCurrency === 'RUB' ? '₽' : '$';
-    return `${converted.toLocaleString('ru-RU', { maximumFractionDigits: 2 })} ${symbol}`;
+    const formatted = displayCurrency === 'RUB' 
+      ? converted.toLocaleString('ru-RU', { maximumFractionDigits: 0 })
+      : converted.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return `${formatted} ${symbol}`;
   }, [displayCurrency, convertAmount]);
 
   const convertedStats = useMemo(() => ({
