@@ -154,9 +154,9 @@ const Index = () => {
     
     return last7Days.map((day: any) => ({
       date: new Date(day.date).toLocaleDateString('ru', { day: 'numeric', month: 'short' }),
-      revenue: day.revenue || 0,
-      costs: ((day.revenue || 0) - (day.profit || 0)) + (day.expenses || 0),
-      profit: day.profit || 0,
+      revenue: Math.round(day.revenue || 0),
+      costs: Math.round(((day.revenue || 0) - (day.profit || 0)) + (day.expenses || 0)),
+      profit: Math.round(day.profit || 0),
     }));
   }, [convertedStats]);
 
