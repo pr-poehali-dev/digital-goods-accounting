@@ -696,19 +696,23 @@ const Index = () => {
               </Card>
             </div>
 
-            {revenueByMonth.length > 0 && (
+            {dailyChartData.length > 0 && (
               <Card>
                 <CardHeader>
                   <CardTitle>Динамика прибыли</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={400}>
-                    <BarChart data={revenueByMonth.map(item => ({
-                      ...item,
-                      profit: item.revenue - item.costs,
-                    }))}>
+                    <BarChart data={dailyChartData}>
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 13%, 91%)" />
-                      <XAxis dataKey="month" stroke="hsl(215, 16%, 65%)" fontSize={12} />
+                      <XAxis 
+                        dataKey="date" 
+                        stroke="hsl(215, 16%, 65%)" 
+                        fontSize={12}
+                        angle={-45}
+                        textAnchor="end"
+                        height={60}
+                      />
                       <YAxis stroke="hsl(215, 16%, 65%)" fontSize={12} />
                       <Tooltip
                         contentStyle={{
@@ -717,7 +721,7 @@ const Index = () => {
                           borderRadius: '8px',
                         }}
                       />
-                      <Bar dataKey="profit" fill="hsl(142, 76%, 36%)" radius={[8, 8, 0, 0]} />
+                      <Bar dataKey="profit" fill="hsl(142, 76%, 36%)" radius={[8, 8, 0, 0]} name="Прибыль" />
                     </BarChart>
                   </ResponsiveContainer>
                 </CardContent>
