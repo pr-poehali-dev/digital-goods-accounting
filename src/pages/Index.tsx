@@ -36,6 +36,7 @@ const Index = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [dateFilter, setDateFilter] = useState<'today' | 'week' | 'month' | 'all' | 'custom'>('all');
   const [customDateRange, setCustomDateRange] = useState({ start: '', end: '' });
+  const [analyticsGrouping, setAnalyticsGrouping] = useState<'day' | 'week' | 'month' | 'quarter' | 'year'>('month');
   const [stats, setStats] = useState({
     total_revenue: 0,
     total_costs: 0,
@@ -137,15 +138,67 @@ const Index = () => {
   }), [stats, convertAmount]);
 
   const dailyChartData = useMemo(() => {
-    if (!convertedStats.daily_analytics) return [];
+    if (!convertedStats.daily_analytics || convertedStats.daily_analytics.length === 0) return [];
     
-    return convertedStats.daily_analytics.map((day: any) => ({
+    const last7Days = convertedStats.daily_analytics.slice(-7);
+    
+    return last7Days.map((day: any) => ({
       date: new Date(day.date).toLocaleDateString('ru', { day: 'numeric', month: 'short' }),
       revenue: day.revenue || 0,
       costs: (day.revenue || 0) - (day.profit || 0),
       profit: day.profit || 0,
     }));
   }, [convertedStats]);
+
+  const groupDataByPeriod = useCallback((data: any[], grouping: 'day' | 'week' | 'month' | 'quarter' | 'year') => {
+    if (!data || data.length === 0) return [];
+    
+    const grouped = data.reduce((acc: any, item: any) => {
+      const date = new Date(item.date);
+      let key = '';
+      
+      switch (grouping) {
+        case 'day':
+          key = date.toLocaleDateString('ru', { day: 'numeric', month: 'short' });
+          break;
+        case 'week':
+          const weekStart = new Date(date);
+          weekStart.setDate(date.getDate() - date.getDay() + 1);
+          key = `Нед ${weekStart.toLocaleDateString('ru', { day: 'numeric', month: 'short' })}`;
+          break;
+        case 'month':
+          key = date.toLocaleDateString('ru', { month: 'short', year: 'numeric' });
+          break;
+        case 'quarter':
+          const quarter = Math.floor(date.getMonth() / 3) + 1;
+          key = `Q${quarter} ${date.getFullYear()}`;
+          break;
+        case 'year':
+          key = date.getFullYear().toString();
+          break;
+      }
+      
+      if (!acc[key]) {
+        acc[key] = { period: key, revenue: 0, profit: 0, costs: 0, count: 0, expenses: 0, net_profit: 0 };
+      }
+      
+      acc[key].revenue += item.revenue || 0;
+      acc[key].profit += item.profit || 0;
+      acc[key].costs += (item.revenue || 0) - (item.profit || 0);
+      acc[key].count += item.count || 0;
+      acc[key].expenses += item.expenses || 0;
+      acc[key].net_profit += item.net_profit || 0;
+      
+      return acc;
+    }, {});
+    
+    return Object.values(grouped);
+  }, []);
+
+  const analyticsChartData = useMemo(() => {
+    if (!convertedStats.daily_analytics) return [];
+    return groupDataByPeriod(convertedStats.daily_analytics, analyticsGrouping);
+  }, [convertedStats.daily_analytics, analyticsGrouping, groupDataByPeriod]);
 
   if (!isAuthenticated) {
     return <TelegramAuth onAuthenticated={(user) => {
@@ -364,7 +417,7 @@ const Index = () => {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Icon name="BarChart3" size={18} />
-                    Динамика доходов и затрат
+                    Динамика доходов и затрат (последние 7 дней)
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -385,9 +438,6 @@ const Index = () => {
                         dataKey="date" 
                         stroke="hsl(215, 16%, 65%)" 
                         fontSize={12}
-                        angle={-45}
-                        textAnchor="end"
-                        height={60}
                       />
                       <YAxis stroke="hsl(215, 16%, 65%)" fontSize={12} />
                       <Tooltip
@@ -696,22 +746,61 @@ const Index = () => {
               </Card>
             </div>
 
-            {dailyChartData.length > 0 && (
+            {analyticsChartData.length > 0 && (
               <Card>
                 <CardHeader>
-                  <CardTitle>Динамика прибыли</CardTitle>
+                  <div className="flex items-center justify-between">
+                    <CardTitle>Динамика прибыли</CardTitle>
+                    <div className="flex gap-1">
+                      <Button 
+                        variant={analyticsGrouping === 'day' ? 'default' : 'outline'} 
+                        size="sm"
+                        onClick={() => setAnalyticsGrouping('day')}
+                      >
+                        День
+                      </Button>
+                      <Button 
+                        variant={analyticsGrouping === 'week' ? 'default' : 'outline'} 
+                        size="sm"
+                        onClick={() => setAnalyticsGrouping('week')}
+                      >
+                        Неделя
+                      </Button>
+                      <Button 
+                        variant={analyticsGrouping === 'month' ? 'default' : 'outline'} 
+                        size="sm"
+                        onClick={() => setAnalyticsGrouping('month')}
+                      >
+                        Месяц
+                      </Button>
+                      <Button 
+                        variant={analyticsGrouping === 'quarter' ? 'default' : 'outline'} 
+                        size="sm"
+                        onClick={() => setAnalyticsGrouping('quarter')}
+                      >
+                        Квартал
+                      </Button>
+                      <Button 
+                        variant={analyticsGrouping === 'year' ? 'default' : 'outline'} 
+                        size="sm"
+                        onClick={() => setAnalyticsGrouping('year')}
+                      >
+                        Год
+                      </Button>
+                    </div>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={400}>
-                    <BarChart data={dailyChartData}>
+                    <BarChart data={analyticsChartData}>
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 13%, 91%)" />
                       <XAxis 
-                        dataKey="date" 
+                        dataKey="period" 
                         stroke="hsl(215, 16%, 65%)" 
                         fontSize={12}
-                        angle={-45}
-                        textAnchor="end"
-                        height={60}
+                        angle={analyticsGrouping === 'day' ? -45 : 0}
+                        textAnchor={analyticsGrouping === 'day' ? 'end' : 'middle'}
+                        height={analyticsGrouping === 'day' ? 60 : 30}
                       />
                       <YAxis stroke="hsl(215, 16%, 65%)" fontSize={12} />
                       <Tooltip
