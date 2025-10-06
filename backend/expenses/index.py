@@ -130,7 +130,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         
         cur.execute("""
             SELECT e.id, e.expense_type_id, et.name, e.amount, e.description, 
-                   e.start_date, e.end_date, e.distribution_type, e.status
+                   e.start_date, e.end_date, e.distribution_type, e.status, e.currency
             FROM expenses e
             LEFT JOIN expense_types et ON e.expense_type_id = et.id
             ORDER BY e.created_at DESC
@@ -149,7 +149,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'start_date': row[5].isoformat() if row[5] else None,
                 'end_date': row[6].isoformat() if row[6] else None,
                 'distribution_type': row[7],
-                'status': row[8]
+                'status': row[8],
+                'currency': row[9] if len(row) > 9 and row[9] else 'RUB'
             })
         
         cur.close()
@@ -192,12 +193,13 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         start_date = body_data.get('start_date')
         end_date = body_data.get('end_date')
         distribution_type = body_data.get('distribution_type', 'one_time')
+        currency = body_data.get('currency', 'RUB')
         
         end_date_sql = "'" + end_date + "'" if end_date else 'NULL'
         
         cur.execute(
-            "INSERT INTO expenses (expense_type_id, amount, description, start_date, end_date, distribution_type) VALUES (" 
-            + str(expense_type_id) + ", " + str(amount) + ", '" + description + "', '" + start_date + "', " + end_date_sql + ", '" + distribution_type + "') RETURNING id"
+            "INSERT INTO expenses (expense_type_id, amount, description, start_date, end_date, distribution_type, currency) VALUES (" 
+            + str(expense_type_id) + ", " + str(amount) + ", '" + description + "', '" + start_date + "', " + end_date_sql + ", '" + distribution_type + "', '" + currency + "') RETURNING id"
         )
         expense_id = cur.fetchone()[0]
         
