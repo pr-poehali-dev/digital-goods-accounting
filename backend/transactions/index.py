@@ -134,10 +134,6 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 """)
                 expenses = cur.fetchall()
                 
-                print(f"DEBUG: Found {len(expenses)} expenses")
-                for e in expenses:
-                    print(f"DEBUG: Expense - amount: {e[1]}, start: {e[2]}, end: {e[3]}, type: {e[4]}, currency: {e[5] if len(e) > 5 else 'N/A'}")
-                
                 daily_expenses_map = {}
                 
                 for exp in expenses:
@@ -178,6 +174,17 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             cur.close()
             conn.close()
             
+            expenses_debug = []
+            for exp in expenses:
+                expenses_debug.append({
+                    'id': exp[0],
+                    'amount': float(exp[1]),
+                    'start_date': exp[2].isoformat() if exp[2] else None,
+                    'end_date': exp[3].isoformat() if exp[3] else None,
+                    'distribution_type': exp[4],
+                    'currency': exp[5] if len(exp) > 5 and exp[5] else 'N/A'
+                })
+            
             return {
                 'statusCode': 200,
                 'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
@@ -190,7 +197,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'pending_count': stats[5] or 0,
                     'failed_count': stats[6] or 0,
                     'product_analytics': product_analytics,
-                    'daily_analytics': daily_analytics
+                    'daily_analytics': daily_analytics,
+                    'expenses_debug': expenses_debug,
+                    'daily_expenses_map_debug': daily_expenses_map
                 }),
                 'isBase64Encoded': False
             }
