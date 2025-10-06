@@ -59,9 +59,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             cur.execute(f"""
                 SELECT 
                     COUNT(*) as total_transactions,
-                    SUM(amount) as total_revenue,
-                    SUM(cost_price) as total_costs,
-                    SUM(profit) as total_profit,
+                    SUM(CASE WHEN currency = 'USD' THEN amount * 95.5 ELSE amount END) as total_revenue,
+                    SUM(CASE WHEN currency = 'USD' THEN cost_price * 95.5 ELSE cost_price END) as total_costs,
+                    SUM(CASE WHEN currency = 'USD' THEN profit * 95.5 ELSE profit END) as total_profit,
                     COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed_count,
                     COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending_count,
                     COUNT(CASE WHEN status = 'failed' THEN 1 END) as failed_count
@@ -71,7 +71,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             stats = cur.fetchone()
             
             cur.execute(f"""
-                SELECT p.name, COUNT(*) as sales_count, SUM(t.profit) as total_profit, SUM(t.amount) as total_revenue
+                SELECT p.name, COUNT(*) as sales_count, 
+                    SUM(CASE WHEN t.currency = 'USD' THEN t.profit * 95.5 ELSE t.profit END) as total_profit, 
+                    SUM(CASE WHEN t.currency = 'USD' THEN t.amount * 95.5 ELSE t.amount END) as total_revenue
                 FROM transactions t
                 LEFT JOIN products p ON t.product_id = p.id
                 WHERE t.status = 'completed' {date_condition.replace('AND', '')}
@@ -81,7 +83,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             product_stats = cur.fetchall()
             
             cur.execute(f"""
-                SELECT transaction_date::date as date, COUNT(*) as count, SUM(profit) as profit, SUM(amount) as revenue
+                SELECT transaction_date::date as date, COUNT(*) as count, 
+                    SUM(CASE WHEN currency = 'USD' THEN profit * 95.5 ELSE profit END) as profit, 
+                    SUM(CASE WHEN currency = 'USD' THEN amount * 95.5 ELSE amount END) as revenue
                 FROM transactions
                 WHERE status = 'completed' {date_condition.replace('AND', '')}
                 GROUP BY transaction_date::date
