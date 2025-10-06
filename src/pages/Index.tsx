@@ -136,29 +136,16 @@ const Index = () => {
     })),
   }), [stats, convertAmount]);
 
-  const revenueByMonth = useMemo(() => {
-    if (!isAuthenticated) return [];
+  const dailyChartData = useMemo(() => {
+    if (!convertedStats.daily_analytics) return [];
     
-    return transactions.reduce((acc, t) => {
-      const month = new Date(t.transaction_date).toLocaleDateString('ru', { month: 'short' });
-      const existing = acc.find(item => item.month === month);
-      const revenue = convertAmount(t.amount, t.currency);
-      const costs = convertAmount(t.amount - t.profit, t.currency);
-      
-      if (existing) {
-        existing.revenue += revenue;
-        existing.costs += costs;
-      } else {
-        acc.push({
-          month,
-          revenue,
-          costs,
-        });
-      }
-      
-      return acc;
-    }, [] as Array<{ month: string; revenue: number; costs: number }>);
-  }, [isAuthenticated, transactions, convertAmount]);
+    return convertedStats.daily_analytics.map((day: any) => ({
+      date: new Date(day.date).toLocaleDateString('ru', { day: 'numeric', month: 'short' }),
+      revenue: day.revenue || 0,
+      costs: (day.revenue || 0) - (day.profit || 0),
+      profit: day.profit || 0,
+    }));
+  }, [convertedStats]);
 
   if (!isAuthenticated) {
     return <TelegramAuth onAuthenticated={(user) => {
@@ -372,7 +359,7 @@ const Index = () => {
               </Card>
             </div>
 
-            {revenueByMonth.length > 0 && (
+            {dailyChartData.length > 0 && (
               <Card className="animate-fade-in" style={{ animationDelay: '0.4s' }}>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -382,7 +369,7 @@ const Index = () => {
                 </CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={300}>
-                    <AreaChart data={revenueByMonth}>
+                    <AreaChart data={dailyChartData}>
                       <defs>
                         <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
                           <stop offset="5%" stopColor="hsl(217, 91%, 60%)" stopOpacity={0.3} />
@@ -394,7 +381,14 @@ const Index = () => {
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 13%, 91%)" />
-                      <XAxis dataKey="month" stroke="hsl(215, 16%, 65%)" fontSize={12} />
+                      <XAxis 
+                        dataKey="date" 
+                        stroke="hsl(215, 16%, 65%)" 
+                        fontSize={12}
+                        angle={-45}
+                        textAnchor="end"
+                        height={60}
+                      />
                       <YAxis stroke="hsl(215, 16%, 65%)" fontSize={12} />
                       <Tooltip
                         contentStyle={{
@@ -403,8 +397,8 @@ const Index = () => {
                           borderRadius: '8px',
                         }}
                       />
-                      <Area type="monotone" dataKey="revenue" stroke="hsl(217, 91%, 60%)" strokeWidth={2} fill="url(#colorRevenue)" />
-                      <Area type="monotone" dataKey="costs" stroke="hsl(0, 91%, 59%)" strokeWidth={2} fill="url(#colorCosts)" />
+                      <Area type="monotone" dataKey="revenue" stroke="hsl(217, 91%, 60%)" strokeWidth={2} fill="url(#colorRevenue)" name="Доход" />
+                      <Area type="monotone" dataKey="costs" stroke="hsl(0, 91%, 59%)" strokeWidth={2} fill="url(#colorCosts)" name="Затраты" />
                     </AreaChart>
                   </ResponsiveContainer>
                 </CardContent>
