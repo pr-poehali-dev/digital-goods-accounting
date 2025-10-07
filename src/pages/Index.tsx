@@ -149,6 +149,7 @@ const Index = () => {
     total_transactions: stats.total_transactions || 0,
     completed_count: stats.completed_count || 0,
     pending_count: stats.pending_count || 0,
+    expenses_count: stats.expenses_count || 0,
     product_analytics: (stats.product_analytics || []).map((p: any) => ({
       ...p,
       revenue: convertAmount(p.revenue || 0),
