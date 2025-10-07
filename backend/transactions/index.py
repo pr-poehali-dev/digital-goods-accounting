@@ -50,17 +50,17 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             if date_filter == 'today':
                 today = datetime.now().date()
-                date_condition = f"AND transaction_date::date = '{today.isoformat()}'"
+                date_condition = f"AND \"transaction_date\"::date = '{today.isoformat()}'"
             elif date_filter == 'week':
                 today = datetime.now().date()
                 week_start = today - timedelta(days=today.weekday())
-                date_condition = f"AND transaction_date::date >= '{week_start.isoformat()}'"
+                date_condition = f"AND \"transaction_date\"::date >= '{week_start.isoformat()}'"
             elif date_filter == 'month':
                 today = datetime.now().date()
                 month_start = today.replace(day=1)
-                date_condition = f"AND transaction_date::date >= '{month_start.isoformat()}'"
+                date_condition = f"AND \"transaction_date\"::date >= '{month_start.isoformat()}'"
             elif date_filter == 'custom' and start_date and end_date:
-                date_condition = f"AND transaction_date::date BETWEEN '{start_date}' AND '{end_date}'"
+                date_condition = f"AND \"transaction_date\"::date BETWEEN '{start_date}' AND '{end_date}'"
             elif date_filter == 'all':
                 date_condition = ""
             else:
@@ -275,10 +275,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         cur.execute("""
             SELECT t.id, t.transaction_code, t.product_id, p.name, t.client_telegram, 
                    t.client_name, t.amount, t.cost_price, t.profit, t.status, 
-                   t.transaction_date, t.notes, t.currency
+                   t.\"transaction_date\", t.notes, t.currency
             FROM transactions t
             LEFT JOIN products p ON t.product_id = p.id
-            ORDER BY t.transaction_date DESC
+            ORDER BY t.\"transaction_date\" DESC
             LIMIT 100
         """)
         rows = cur.fetchall()

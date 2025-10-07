@@ -150,26 +150,13 @@ const Index = () => {
   const dailyChartData = useMemo(() => {
     if (!convertedStats.daily_analytics || convertedStats.daily_analytics.length === 0) return [];
     
-    let filteredData = convertedStats.daily_analytics;
-    
-    if (dateFilter === 'custom' && customDateRange.start && customDateRange.end) {
-      const start = new Date(customDateRange.start);
-      const end = new Date(customDateRange.end);
-      filteredData = filteredData.filter((day: any) => {
-        const dayDate = new Date(day.date);
-        return dayDate >= start && dayDate <= end;
-      });
-    } else if (dateFilter !== 'all') {
-      filteredData = filteredData.slice(-7);
-    }
-    
-    return filteredData.map((day: any) => ({
+    return convertedStats.daily_analytics.map((day: any) => ({
       date: new Date(day.date).toLocaleDateString('ru', { day: 'numeric', month: 'short' }),
       revenue: Math.round(day.revenue || 0),
       costs: Math.round(((day.revenue || 0) - (day.profit || 0)) + (day.expenses || 0)),
       profit: Math.round(day.profit || 0),
     }));
-  }, [convertedStats, dateFilter, customDateRange]);
+  }, [convertedStats]);
 
   const groupDataByPeriod = useCallback((data: any[], grouping: 'day' | 'week' | 'month' | 'quarter' | 'year') => {
     if (!data || data.length === 0) return [];
