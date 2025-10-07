@@ -23,6 +23,9 @@ const AdminPanel = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
+  const [newPassword, setNewPassword] = useState('');
   const [newUser, setNewUser] = useState({
     email: '',
     password: '',
@@ -115,6 +118,39 @@ const AdminPanel = () => {
         loadUsers();
       } else {
         toast.error('Ошибка обновления статуса');
+      }
+    } catch (error) {
+      toast.error('Ошибка подключения');
+    }
+  };
+
+  const changePassword = async () => {
+    if (!newPassword || newPassword.length < 6) {
+      toast.error('Пароль должен быть минимум 6 символов');
+      return;
+    }
+
+    try {
+      const response = await fetch('https://functions.poehali.dev/0fe2adb1-b56f-4acd-aa46-246d52206d4d', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Auth-Token': authToken || ''
+        },
+        body: JSON.stringify({
+          action: 'update',
+          user_id: selectedUserId,
+          password: newPassword
+        })
+      });
+
+      if (response.ok) {
+        toast.success('Пароль изменен');
+        setIsPasswordDialogOpen(false);
+        setNewPassword('');
+        setSelectedUserId(null);
+      } else {
+        toast.error('Ошибка смены пароля');
       }
     } catch (error) {
       toast.error('Ошибка подключения');
@@ -239,21 +275,74 @@ const AdminPanel = () => {
                       {user.last_login && ` • Последний вход: ${new Date(user.last_login).toLocaleDateString('ru-RU')}`}
                     </p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Switch
-                      checked={user.is_active}
-                      onCheckedChange={() => toggleUserStatus(user.id, user.is_active)}
-                      disabled={user.email === currentUser.email}
-                    />
-                    <span className="text-sm text-slate-400">
-                      {user.is_active ? 'Активен' : 'Заблокирован'}
-                    </span>
+                  <div className="flex items-center gap-3">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedUserId(user.id);
+                        setIsPasswordDialogOpen(true);
+                      }}
+                      className="border-slate-600 text-slate-200 hover:bg-slate-700"
+                    >
+                      <Icon name="Key" size={16} className="mr-2" />
+                      Сменить пароль
+                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={user.is_active}
+                        onCheckedChange={() => toggleUserStatus(user.id, user.is_active)}
+                        disabled={user.email === currentUser.email}
+                      />
+                      <span className="text-sm text-slate-400">
+                        {user.is_active ? 'Активен' : 'Заблокирован'}
+                      </span>
+                    </div>
                   </div>
                 </div>
               ))}
             </div>
           </CardContent>
         </Card>
+
+        <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
+          <DialogContent className="bg-slate-800 border-slate-700">
+            <DialogHeader>
+              <DialogTitle className="text-white">Сменить пароль</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label className="text-slate-200">Новый пароль (минимум 6 символов)</Label>
+                <Input
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Введите новый пароль"
+                  className="bg-slate-700 border-slate-600 text-white"
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button 
+                  onClick={changePassword} 
+                  className="flex-1 bg-emerald-500 hover:bg-emerald-600"
+                >
+                  Сменить пароль
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setIsPasswordDialogOpen(false);
+                    setNewPassword('');
+                    setSelectedUserId(null);
+                  }}
+                  className="border-slate-600 text-slate-200"
+                >
+                  Отмена
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
