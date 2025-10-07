@@ -195,93 +195,13 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'date': row[0].isoformat() if row[0] else None,
                     'count': row[1],
                     'profit': float(row[2]) if row[2] else 0,
-                    'revenue': float(row[3]) if row[3] else 0
+                    'revenue': float(row[3]) if row[3] else 0,
+                    'expenses': 0,
+                    'net_profit': float(row[2]) if row[2] else 0
                 })
-            
-            expenses = []
-            daily_expenses_map = {}
-            
-            if daily_analytics:
-                start_date = daily_analytics[0]['date']
-                end_date = daily_analytics[-1]['date']
-                
-                cur.execute("""
-                    SELECT e.id, e.amount, e.start_date, e.end_date, e.distribution_type, e.currency
-                    FROM expenses e
-                    WHERE e.status = 'active'
-                    AND e.start_date <= '""" + end_date + """'
-                    AND (e.end_date IS NULL OR e.end_date >= '""" + start_date + """')
-                """)
-                expenses = cur.fetchall()
-                
-                for exp in expenses:
-                    amount = float(exp[1])
-                    exp_start = exp[2]
-                    exp_end = exp[3]
-                    dist_type = exp[4]
-                    currency = exp[5] if len(exp) > 5 and exp[5] else 'RUB'
-                    
-                    if currency == 'USD':
-                        amount = amount * exchange_rate
-                    
-                    if dist_type == 'one_time':
-                        date_key = exp_start.isoformat()
-                        if date_key not in daily_expenses_map:
-                            daily_expenses_map[date_key] = 0
-                        daily_expenses_map[date_key] += amount
-                    else:
-                        chart_start = datetime.strptime(start_date, '%Y-%m-%d').date()
-                        chart_end = datetime.strptime(end_date, '%Y-%m-%d').date()
-                        
-                        actual_start = max(chart_start, exp_start)
-                        actual_end = min(chart_end, exp_end) if exp_end else chart_end
-                        
-                        total_expense_days = (exp_end - exp_start).days + 1 if exp_end else 365
-                        daily_amount = amount / total_expense_days
-                        
-                        overlap_days = (actual_end - actual_start).days + 1
-                        if overlap_days > 0:
-                            current_date = actual_start
-                            while current_date <= actual_end:
-                                date_key = current_date.isoformat()
-                                if date_key not in daily_expenses_map:
-                                    daily_expenses_map[date_key] = 0
-                                daily_expenses_map[date_key] += daily_amount
-                                current_date += timedelta(days=1)
-                
-                for day in daily_analytics:
-                    day['expenses'] = round(daily_expenses_map.get(day['date'], 0), 2)
-                    day['net_profit'] = round(day['profit'] - day['expenses'], 2)
-                
-                existing_dates = {day['date'] for day in daily_analytics}
-                for date_key, expense_amount in daily_expenses_map.items():
-                    if date_key not in existing_dates:
-                        date_obj = datetime.strptime(date_key, '%Y-%m-%d').date()
-                        if date_obj <= datetime.now().date():
-                            daily_analytics.append({
-                                'date': date_key,
-                                'count': 0,
-                                'profit': 0,
-                                'revenue': 0,
-                                'expenses': round(expense_amount, 2),
-                                'net_profit': round(-expense_amount, 2)
-                            })
-                
-                daily_analytics.sort(key=lambda x: x['date'])
             
             cur.close()
             conn.close()
-            
-            expenses_debug = []
-            for exp in expenses:
-                expenses_debug.append({
-                    'id': exp[0],
-                    'amount': float(exp[1]),
-                    'start_date': exp[2].isoformat() if exp[2] else None,
-                    'end_date': exp[3].isoformat() if exp[3] else None,
-                    'distribution_type': exp[4],
-                    'currency': exp[5] if len(exp) > 5 and exp[5] else 'N/A'
-                })
             
             transaction_costs = float(stats[2]) if stats[2] else 0
             total_costs_with_expenses = transaction_costs + total_expenses
@@ -303,9 +223,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'failed_count': stats[6] or 0,
                     'expenses_count': expenses_count,
                     'product_analytics': product_analytics,
-                    'daily_analytics': daily_analytics,
-                    'expenses_debug': expenses_debug,
-                    'daily_expenses_map_debug': daily_expenses_map
+                    'daily_analytics': daily_analytics
                 }),
                 'isBase64Encoded': False
             }
