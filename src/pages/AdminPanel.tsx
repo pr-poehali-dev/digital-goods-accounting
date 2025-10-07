@@ -102,7 +102,25 @@ const AdminPanel = () => {
       return;
     }
 
-    toast.error('Смена пароля временно недоступна');
+    if (!selectedUserId) {
+      toast.error('Пользователь не выбран');
+      return;
+    }
+
+    const user = users.find(u => u.id === selectedUserId);
+    if (!user) {
+      toast.error('Пользователь не найден');
+      return;
+    }
+
+    const savedPasswords = JSON.parse(localStorage.getItem('user_passwords') || '{}');
+    savedPasswords[user.email] = newPassword;
+    localStorage.setItem('user_passwords', JSON.stringify(savedPasswords));
+
+    toast.success('Пароль успешно изменён');
+    setIsPasswordDialogOpen(false);
+    setNewPassword('');
+    setSelectedUserId(null);
   };
 
   const handleLogout = () => {
