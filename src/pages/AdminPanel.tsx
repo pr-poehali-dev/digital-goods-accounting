@@ -63,7 +63,7 @@ const AdminPanel = () => {
 
   const loadUsers = async () => {
     try {
-      const response = await fetch('https://functions.poehali.dev/f3f65f30-8151-4e8f-a1f0-d71fe9e87fb0?action=users', {
+      const response = await fetch('https://functions.poehali.dev/0fe2adb1-b56f-4acd-aa46-246d52206d4d?action=users', {
         method: 'GET',
         headers: {
           'X-Auth-Token': authToken || ''
@@ -108,7 +108,7 @@ const AdminPanel = () => {
     }
 
     try {
-      const response = await fetch('https://functions.poehali.dev/f3f65f30-8151-4e8f-a1f0-d71fe9e87fb0', {
+      const response = await fetch('https://functions.poehali.dev/0fe2adb1-b56f-4acd-aa46-246d52206d4d', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
