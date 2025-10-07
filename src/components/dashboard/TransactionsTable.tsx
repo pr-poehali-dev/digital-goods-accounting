@@ -71,11 +71,11 @@ const TransactionsTable = ({
                   </TableCell>
                   <TableCell className="text-muted-foreground">{transaction.product_name}</TableCell>
                   <TableCell className="text-right font-semibold">
-                    ₽{transaction.amount.toLocaleString()}
+                    {transaction.currency === 'USD' ? '$' : '₽'}{transaction.amount.toLocaleString()}
                   </TableCell>
                   {showProfit && (
                     <TableCell className="text-right text-green-600 font-semibold">
-                      ₽{transaction.profit.toLocaleString()}
+                      {transaction.currency === 'USD' ? '$' : '₽'}{transaction.profit.toLocaleString()}
                     </TableCell>
                   )}
                   <TableCell>
