@@ -41,7 +41,9 @@ const StatsCards = ({ stats, formatCurrency }: StatsCardsProps) => {
           <div className="text-3xl font-bold text-foreground">
             {stats.total_transactions}
           </div>
-          <p className="text-xs text-muted-foreground mt-1">Завершено: {stats.completed_count}</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Завершено: {stats.completed_count} • Ожидает: {stats.pending_count}
+          </p>
         </CardContent>
       </Card>
 
