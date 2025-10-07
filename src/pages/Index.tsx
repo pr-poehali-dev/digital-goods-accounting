@@ -52,6 +52,21 @@ const Index = () => {
   }, [navigate]);
   const [displayCurrency, setDisplayCurrency] = useState<'RUB' | 'USD'>('RUB');
   const [exchangeRate, setExchangeRate] = useState(82);
+  
+  useEffect(() => {
+    const fetchRate = async () => {
+      try {
+        const res = await fetch('https://www.cbr-xml-daily.ru/daily_json.js');
+        const data = await res.json();
+        if (data?.Valute?.USD?.Value) {
+          setExchangeRate(data.Valute.USD.Value);
+        }
+      } catch {
+        setExchangeRate(82);
+      }
+    };
+    fetchRate();
+  }, []);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [dateFilter, setDateFilter] = useState<'today' | 'week' | 'month' | 'all' | 'custom'>('all');
   const [customDateRange, setCustomDateRange] = useState({ start: '', end: '' });
@@ -247,8 +262,6 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <DashboardHeader
         displayCurrency={displayCurrency}
-        exchangeRate={exchangeRate}
-        onExchangeRateChange={setExchangeRate}
         onCurrencyChange={setDisplayCurrency}
         onNewTransaction={() => setTransactionFormOpen(true)}
         onLogout={handleLogout}
