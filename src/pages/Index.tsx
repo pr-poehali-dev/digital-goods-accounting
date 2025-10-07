@@ -133,24 +133,15 @@ const Index = () => {
     return amount;
   }, [displayCurrency, exchangeRate]);
 
-  const formatCurrency = useCallback((amount: number, currency?: string) => {
-    const converted = convertAmount(amount || 0, currency || 'RUB');
+  const formatCurrency = useCallback((amount: number) => {
     const symbol = displayCurrency === 'RUB' ? '₽' : '$';
     const formatted = displayCurrency === 'RUB' 
-      ? converted.toLocaleString('ru-RU', { maximumFractionDigits: 0 })
-      : converted.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      ? amount.toLocaleString('ru-RU', { maximumFractionDigits: 0 })
+      : amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     return `${formatted} ${symbol}`;
-  }, [displayCurrency, convertAmount]);
+  }, [displayCurrency]);
 
-  const convertedStats = useMemo(() => {
-    console.log('Converting stats:', {
-      raw_revenue: stats.total_revenue,
-      displayCurrency,
-      exchangeRate,
-      converted_revenue: convertAmount(stats.total_revenue || 0, 'RUB')
-    });
-    
-    return {
+  const convertedStats = useMemo(() => ({
     total_revenue: convertAmount(stats.total_revenue || 0, 'RUB'),
     total_costs: convertAmount(stats.total_costs || 0, 'RUB'),
     total_profit: convertAmount(stats.total_profit || 0, 'RUB'),
@@ -170,8 +161,7 @@ const Index = () => {
       expenses: convertAmount(d.expenses || 0, 'RUB'),
       net_profit: convertAmount(d.net_profit || 0, 'RUB'),
     })),
-  };
-  }, [stats, convertAmount, displayCurrency, exchangeRate]);
+  }), [stats, convertAmount]);
 
   const dailyChartData = useMemo(() => {
     if (!convertedStats.daily_analytics || convertedStats.daily_analytics.length === 0) return [];
