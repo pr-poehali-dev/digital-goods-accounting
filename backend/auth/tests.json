@@ -1,14 +1,31 @@
 {
   "tests": [
     {
-      "name": "Add user to whitelist",
-      "method": "GET",
-      "path": "/?action=add&telegram_id=123456789&username=testuser",
+      "name": "Login with main admin",
+      "method": "POST",
+      "body": {
+        "action": "login",
+        "email": "ourcryptoway@gmail.com",
+        "password": "admin123"
+      },
       "expectedStatus": 200,
       "expectedBody": {
-        "success": true
+        "token": "string",
+        "user": {
+          "email": "string",
+          "is_admin": true
+        }
       },
       "bodyMatcher": "partial"
+    },
+    {
+      "name": "Verify token failure",
+      "method": "POST",
+      "body": {
+        "action": "verify",
+        "token": "invalid-token"
+      },
+      "expectedStatus": 401
     }
   ]
 }

@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
 
@@ -6,14 +7,18 @@ interface DashboardHeaderProps {
   onCurrencyChange: (currency: 'RUB' | 'USD') => void;
   onNewTransaction: () => void;
   onLogout: () => void;
+  isAdmin?: boolean;
 }
 
 const DashboardHeader = ({ 
   displayCurrency, 
   onCurrencyChange, 
   onNewTransaction, 
-  onLogout 
+  onLogout,
+  isAdmin = false
 }: DashboardHeaderProps) => {
+  const navigate = useNavigate();
+  
   return (
     <div className="border-b bg-card">
       <div className="container mx-auto px-6 py-4">
@@ -51,6 +56,12 @@ const DashboardHeader = ({
               <Icon name="Plus" size={16} className="mr-2" />
               Новая транзакция
             </Button>
+            {isAdmin && (
+              <Button variant="outline" onClick={() => navigate('/admin')}>
+                <Icon name="Users" size={16} className="mr-2" />
+                Пользователи
+              </Button>
+            )}
             <Button variant="outline" onClick={onLogout}>
               <Icon name="LogOut" size={16} className="mr-2" />
               Выйти

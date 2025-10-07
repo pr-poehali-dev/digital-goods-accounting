@@ -3,14 +3,17 @@ import os
 import psycopg2
 import hmac
 import hashlib
+import bcrypt
+import jwt
+from datetime import datetime, timedelta
 from typing import Dict, Any
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
-    '''
-    Business: Авторизация через Telegram Login Widget с проверкой hash
-    Args: event с httpMethod, body с данными от Telegram
-    Returns: HTTP response с результатом авторизации
-    '''
+    """
+    Business: User authentication - email/password login and user management
+    Args: event with httpMethod, body, headers
+    Returns: HTTP response with auth tokens or user data
+    """
     method: str = event.get('httpMethod', 'GET')
     
     if method == 'OPTIONS':
@@ -18,150 +21,260 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'statusCode': 200,
             'headers': {
                 'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-                'Access-Control-Allow-Headers': 'Content-Type',
+                'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+                'Access-Control-Allow-Headers': 'Content-Type, X-Auth-Token',
                 'Access-Control-Max-Age': '86400'
             },
             'body': '',
             'isBase64Encoded': False
         }
     
-    if method == 'POST':
-        body_data = json.loads(event.get('body', '{}'))
-        
-        telegram_id = body_data.get('id')
-        first_name = body_data.get('first_name', '')
-        last_name = body_data.get('last_name', '')
-        username = body_data.get('username', '')
-        photo_url = body_data.get('photo_url', '')
-        auth_date = body_data.get('auth_date')
-        hash_value = body_data.get('hash')
-        
-        if not telegram_id or not hash_value:
-            return {
-                'statusCode': 400,
-                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-                'body': json.dumps({'error': 'Invalid data from Telegram'}),
-                'isBase64Encoded': False
-            }
-        
-        bot_token = os.environ.get('TELEGRAM_BOT_TOKEN', '')
-        
-        if not bot_token:
-            return {
-                'statusCode': 500,
-                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-                'body': json.dumps({'error': 'Bot token not configured'}),
-                'isBase64Encoded': False
-            }
-        
-        data_check_arr = []
-        for key in ['id', 'first_name', 'last_name', 'username', 'photo_url', 'auth_date']:
-            if key in body_data and body_data[key]:
-                data_check_arr.append(f"{key}={body_data[key]}")
-        
-        data_check_arr.sort()
-        data_check_string = '\n'.join(data_check_arr)
-        
-        secret_key = hashlib.sha256(bot_token.encode()).digest()
-        expected_hash = hmac.new(secret_key, data_check_string.encode(), hashlib.sha256).hexdigest()
-        
-        if expected_hash != hash_value:
-            return {
-                'statusCode': 403,
-                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-                'body': json.dumps({'error': 'Invalid hash - possible attack'}),
-                'isBase64Encoded': False
-            }
-        
-        dsn = os.environ.get('DATABASE_URL')
-        conn = psycopg2.connect(dsn)
-        cur = conn.cursor()
-        
-        cur.execute(
-            "SELECT id FROM allowed_users WHERE telegram_id = " + str(telegram_id)
-        )
-        user = cur.fetchone()
-        
-        if not user:
-            cur.close()
-            conn.close()
-            return {
-                'statusCode': 403,
-                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-                'body': json.dumps({'error': 'Access denied - user not in whitelist'}),
-                'isBase64Encoded': False
-            }
-        
-        escaped_username = username.replace("'", "''")
-        escaped_first = first_name.replace("'", "''")
-        escaped_last = last_name.replace("'", "''")
-        
-        cur.execute(
-            "UPDATE allowed_users SET username = '" + escaped_username + "' WHERE telegram_id = " + str(telegram_id)
-        )
-        
-        conn.commit()
-        cur.close()
-        conn.close()
-        
-        return {
-            'statusCode': 200,
-            'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-            'body': json.dumps({
-                'success': True,
-                'user': {
-                    'id': telegram_id,
-                    'username': username,
-                    'first_name': first_name,
-                    'last_name': last_name,
-                    'photo_url': photo_url
-                }
-            }),
-            'isBase64Encoded': False
-        }
+    dsn = os.environ.get('DATABASE_URL')
+    jwt_secret = os.environ.get('JWT_SECRET', 'default-secret-change-in-production')
     
-    if method == 'GET':
-        params = event.get('queryStringParameters', {})
-        action = params.get('action', '')
-        
-        if action == 'add':
-            telegram_id = params.get('telegram_id')
-            username = params.get('username', '')
+    conn = psycopg2.connect(dsn)
+    cur = conn.cursor()
+    
+    try:
+        if method == 'POST':
+            body = json.loads(event.get('body', '{}'))
+            action = body.get('action')
             
-            if not telegram_id:
+            if action == 'login':
+                email = body.get('email')
+                password = body.get('password')
+                
+                cur.execute("""
+                    SELECT id, email, password_hash, full_name, is_admin, is_active 
+                    FROM users WHERE email = %s
+                """, (email,))
+                user = cur.fetchone()
+                
+                if not user:
+                    return {
+                        'statusCode': 401,
+                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                        'body': json.dumps({'error': 'Invalid credentials'}),
+                        'isBase64Encoded': False
+                    }
+                
+                user_id, user_email, password_hash, full_name, is_admin, is_active = user
+                
+                if not is_active:
+                    return {
+                        'statusCode': 403,
+                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                        'body': json.dumps({'error': 'Account is disabled'}),
+                        'isBase64Encoded': False
+                    }
+                
+                if not bcrypt.checkpw(password.encode('utf-8'), password_hash.encode('utf-8')):
+                    return {
+                        'statusCode': 401,
+                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                        'body': json.dumps({'error': 'Invalid credentials'}),
+                        'isBase64Encoded': False
+                    }
+                
+                cur.execute("UPDATE users SET last_login = %s WHERE id = %s", (datetime.now(), user_id))
+                conn.commit()
+                
+                token = jwt.encode({
+                    'user_id': user_id,
+                    'email': user_email,
+                    'is_admin': is_admin,
+                    'exp': datetime.utcnow() + timedelta(days=7)
+                }, jwt_secret, algorithm='HS256')
+                
                 return {
-                    'statusCode': 400,
+                    'statusCode': 200,
                     'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-                    'body': json.dumps({'error': 'telegram_id required'}),
+                    'body': json.dumps({
+                        'token': token,
+                        'user': {
+                            'id': user_id,
+                            'email': user_email,
+                            'full_name': full_name,
+                            'is_admin': is_admin
+                        }
+                    }),
                     'isBase64Encoded': False
                 }
             
-            dsn = os.environ.get('DATABASE_URL')
-            conn = psycopg2.connect(dsn)
-            cur = conn.cursor()
+            elif action == 'verify':
+                token = body.get('token')
+                try:
+                    payload = jwt.decode(token, jwt_secret, algorithms=['HS256'])
+                    return {
+                        'statusCode': 200,
+                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                        'body': json.dumps({'valid': True, 'user': payload}),
+                        'isBase64Encoded': False
+                    }
+                except jwt.ExpiredSignatureError:
+                    return {
+                        'statusCode': 401,
+                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                        'body': json.dumps({'valid': False, 'error': 'Token expired'}),
+                        'isBase64Encoded': False
+                    }
+                except jwt.InvalidTokenError:
+                    return {
+                        'statusCode': 401,
+                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                        'body': json.dumps({'valid': False, 'error': 'Invalid token'}),
+                        'isBase64Encoded': False
+                    }
+        
+        elif method == 'GET':
+            params = event.get('queryStringParameters', {})
+            action = params.get('action', '')
             
-            escaped_username = username.replace("'", "''")
-            
-            cur.execute(
-                "INSERT INTO allowed_users (telegram_id, username) VALUES (" + str(telegram_id) + ", '" + escaped_username + "') ON CONFLICT (telegram_id) DO UPDATE SET username = '" + escaped_username + "' RETURNING id"
-            )
-            user_id = cur.fetchone()[0]
-            
-            conn.commit()
-            cur.close()
-            conn.close()
+            if action == 'users':
+                auth_token = event.get('headers', {}).get('X-Auth-Token') or event.get('headers', {}).get('x-auth-token')
+                
+                if not auth_token:
+                    return {
+                        'statusCode': 401,
+                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                        'body': json.dumps({'error': 'No token provided'}),
+                        'isBase64Encoded': False
+                    }
+                
+                try:
+                    payload = jwt.decode(auth_token, jwt_secret, algorithms=['HS256'])
+                    
+                    if not payload.get('is_admin'):
+                        return {
+                            'statusCode': 403,
+                            'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                            'body': json.dumps({'error': 'Admin access required'}),
+                            'isBase64Encoded': False
+                        }
+                    
+                    cur.execute("""
+                        SELECT id, email, full_name, is_admin, is_active, created_at, last_login 
+                        FROM users ORDER BY created_at DESC
+                    """)
+                    users = cur.fetchall()
+                    
+                    users_list = [{
+                        'id': u[0],
+                        'email': u[1],
+                        'full_name': u[2],
+                        'is_admin': u[3],
+                        'is_active': u[4],
+                        'created_at': u[5].isoformat() if u[5] else None,
+                        'last_login': u[6].isoformat() if u[6] else None
+                    } for u in users]
+                    
+                    return {
+                        'statusCode': 200,
+                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                        'body': json.dumps({'users': users_list}),
+                        'isBase64Encoded': False
+                    }
+                except jwt.InvalidTokenError:
+                    return {
+                        'statusCode': 401,
+                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                        'body': json.dumps({'error': 'Invalid token'}),
+                        'isBase64Encoded': False
+                    }
             
             return {
-                'statusCode': 200,
+                'statusCode': 400,
                 'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-                'body': json.dumps({'success': True, 'user_id': user_id}),
+                'body': json.dumps({'error': 'Invalid action'}),
                 'isBase64Encoded': False
             }
+        
+        elif method == 'PUT':
+            auth_token = event.get('headers', {}).get('X-Auth-Token') or event.get('headers', {}).get('x-auth-token')
+            
+            if not auth_token:
+                return {
+                    'statusCode': 401,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'error': 'No token provided'}),
+                    'isBase64Encoded': False
+                }
+            
+            try:
+                payload = jwt.decode(auth_token, jwt_secret, algorithms=['HS256'])
+                
+                if not payload.get('is_admin'):
+                    return {
+                        'statusCode': 403,
+                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                        'body': json.dumps({'error': 'Admin access required'}),
+                        'isBase64Encoded': False
+                    }
+                
+                body = json.loads(event.get('body', '{}'))
+                action = body.get('action')
+                
+                if action == 'create':
+                    email = body.get('email')
+                    password = body.get('password')
+                    full_name = body.get('full_name')
+                    is_admin = body.get('is_admin', False)
+                    
+                    password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+                    
+                    cur.execute("""
+                        INSERT INTO users (email, password_hash, full_name, is_admin) 
+                        VALUES (%s, %s, %s, %s) RETURNING id
+                    """, (email, password_hash, full_name, is_admin))
+                    new_id = cur.fetchone()[0]
+                    conn.commit()
+                    
+                    return {
+                        'statusCode': 200,
+                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                        'body': json.dumps({'id': new_id, 'message': 'User created'}),
+                        'isBase64Encoded': False
+                    }
+                
+                elif action == 'update':
+                    user_id = body.get('user_id')
+                    updates = {}
+                    
+                    if 'is_active' in body:
+                        updates['is_active'] = body['is_active']
+                    if 'is_admin' in body:
+                        updates['is_admin'] = body['is_admin']
+                    if 'password' in body and body['password']:
+                        updates['password_hash'] = bcrypt.hashpw(body['password'].encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+                    
+                    if updates:
+                        set_clause = ', '.join([f"{k} = %s" for k in updates.keys()])
+                        cur.execute(f"UPDATE users SET {set_clause} WHERE id = %s", 
+                                  list(updates.values()) + [user_id])
+                        conn.commit()
+                    
+                    return {
+                        'statusCode': 200,
+                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                        'body': json.dumps({'message': 'User updated'}),
+                        'isBase64Encoded': False
+                    }
+                
+            except jwt.InvalidTokenError:
+                return {
+                    'statusCode': 401,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'error': 'Invalid token'}),
+                    'isBase64Encoded': False
+                }
+        
+        return {
+            'statusCode': 405,
+            'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+            'body': json.dumps({'error': 'Method not allowed'}),
+            'isBase64Encoded': False
+        }
     
-    return {
-        'statusCode': 405,
-        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-        'body': json.dumps({'error': 'Method not allowed'}),
-        'isBase64Encoded': False
-    }
+    finally:
+        cur.close()
+        conn.close()

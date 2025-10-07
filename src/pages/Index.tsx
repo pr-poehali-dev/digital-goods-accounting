@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -34,8 +35,23 @@ interface Transaction {
 }
 
 const Index = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(true);
+  const navigate = useNavigate();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
+  const [currentUser, setCurrentUser] = useState<any>(null);
+
+  useEffect(() => {
+    const token = localStorage.getItem('auth_token');
+    const user = localStorage.getItem('user');
+    
+    if (!token || !user) {
+      navigate('/login');
+      return;
+    }
+    
+    setCurrentUser(JSON.parse(user));
+    setIsAuthenticated(true);
+  }, [navigate]);
   const [displayCurrency, setDisplayCurrency] = useState<'RUB' | 'USD'>('RUB');
   const [exchangeRate, setExchangeRate] = useState(95.50);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -106,8 +122,9 @@ const Index = () => {
   }, [isAuthenticated, loadData]);
 
   const handleLogout = () => {
-    localStorage.removeItem('telegram_id');
-    setIsAuthenticated(false);
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('user');
+    navigate('/login');
   };
 
   const convertAmount = useCallback((amount: number, fromCurrency: string = 'RUB') => {
@@ -209,9 +226,7 @@ const Index = () => {
   }, [convertedStats.daily_analytics, analyticsGrouping, groupDataByPeriod]);
 
   if (!isAuthenticated) {
-    return <TelegramAuth onAuthenticated={(user) => {
-      setIsAuthenticated(true);
-    }} />;
+    return null;
   }
 
   return (
@@ -221,6 +236,7 @@ const Index = () => {
         onCurrencyChange={setDisplayCurrency}
         onNewTransaction={() => setTransactionFormOpen(true)}
         onLogout={handleLogout}
+        isAdmin={currentUser?.is_admin || false}
       />
 
       <div className="container mx-auto px-6 py-8">
