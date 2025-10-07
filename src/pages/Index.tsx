@@ -142,7 +142,15 @@ const Index = () => {
     return `${formatted} ${symbol}`;
   }, [displayCurrency, convertAmount]);
 
-  const convertedStats = useMemo(() => ({
+  const convertedStats = useMemo(() => {
+    console.log('Converting stats:', {
+      raw_revenue: stats.total_revenue,
+      displayCurrency,
+      exchangeRate,
+      converted_revenue: convertAmount(stats.total_revenue || 0, 'RUB')
+    });
+    
+    return {
     total_revenue: convertAmount(stats.total_revenue || 0, 'RUB'),
     total_costs: convertAmount(stats.total_costs || 0, 'RUB'),
     total_profit: convertAmount(stats.total_profit || 0, 'RUB'),
@@ -162,7 +170,8 @@ const Index = () => {
       expenses: convertAmount(d.expenses || 0, 'RUB'),
       net_profit: convertAmount(d.net_profit || 0, 'RUB'),
     })),
-  }), [stats, convertAmount]);
+  };
+  }, [stats, convertAmount, displayCurrency, exchangeRate]);
 
   const dailyChartData = useMemo(() => {
     if (!convertedStats.daily_analytics || convertedStats.daily_analytics.length === 0) return [];
