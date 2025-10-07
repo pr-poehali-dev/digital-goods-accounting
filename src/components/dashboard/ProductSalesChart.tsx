@@ -52,52 +52,50 @@ const ProductSalesChart = ({ data, displayCurrency = 'RUB', useNetProfit = false
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          <ResponsiveContainer width="100%" height={250}>
-            <PieChart>
-              <Pie
-                data={data}
-                dataKey={dataKey}
-                nameKey="name"
-                cx="50%"
-                cy="50%"
-                outerRadius={80}
-                label={(entry) => {
-                  const value = useNetProfit ? entry.total_profit : entry.total_revenue;
-                  const symbol = displayCurrency === 'RUB' ? '₽' : '$';
-                  const formatted = displayCurrency === 'RUB' 
-                    ? value.toLocaleString('ru-RU', { maximumFractionDigits: 0 })
-                    : value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                  return `${entry.name}: ${formatted} ${symbol}`;
-                }}
-              >
-                {data.map((_, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
-          <div className="space-y-2">
-            {data.map((product, index) => (
-              <div key={index} className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
-                <div>
-                  <p className="font-medium">{product.name}</p>
-                  <p className="text-sm text-muted-foreground">{product.sales_count} продаж</p>
-                </div>
-                <div className="text-right">
-                  <p className="font-semibold text-green-600">
-                    {displayCurrency === 'RUB' 
-                      ? `₽${product.total_profit.toLocaleString('ru-RU', { maximumFractionDigits: 0 })}`
-                      : `$${product.total_profit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-                    }
-                  </p>
-                  <p className="text-sm text-muted-foreground">прибыль</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        <ResponsiveContainer width="100%" height={400}>
+          <PieChart>
+            <Pie
+              data={data}
+              dataKey={dataKey}
+              nameKey="name"
+              cx="50%"
+              cy="50%"
+              outerRadius={140}
+              label={(entry) => entry.name}
+            >
+              {data.map((_, index) => (
+                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+              ))}
+            </Pie>
+            <Tooltip
+              formatter={(value: number) => {
+                const symbol = displayCurrency === 'RUB' ? '₽' : '$';
+                const formatted = displayCurrency === 'RUB' 
+                  ? value.toLocaleString('ru-RU', { maximumFractionDigits: 0 })
+                  : value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                return `${formatted} ${symbol}`;
+              }}
+              content={({ payload }) => {
+                if (!payload || !payload[0]) return null;
+                const item = payload[0].payload;
+                const symbol = displayCurrency === 'RUB' ? '₽' : '$';
+                const profitFormatted = displayCurrency === 'RUB' 
+                  ? item.total_profit.toLocaleString('ru-RU', { maximumFractionDigits: 0 })
+                  : item.total_profit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                
+                return (
+                  <div className="bg-background border border-border rounded-lg shadow-lg p-3">
+                    <p className="font-semibold mb-1">{item.name}</p>
+                    <p className="text-sm text-muted-foreground">{item.sales_count} продаж</p>
+                    <p className="text-sm font-medium text-green-600 mt-1">
+                      {profitFormatted} {symbol}
+                    </p>
+                  </div>
+                );
+              }}
+            />
+          </PieChart>
+        </ResponsiveContainer>
       </CardContent>
     </Card>
   );
