@@ -89,26 +89,40 @@ const TransactionForm = ({ open, onOpenChange, onSuccess }: TransactionFormProps
 
     try {
       const qty = parseInt(formData.quantity) || 1;
+      let successCount = 0;
       
       for (let i = 0; i < qty; i++) {
-        await createTransaction({
-          product_id: parseInt(formData.product_id),
-          client_telegram: formData.client_telegram,
-          client_name: formData.client_name,
-          status: formData.status,
-          notes: formData.notes,
-          custom_amount: formData.custom_amount ? parseFloat(formData.custom_amount) : undefined,
-          currency: formData.currency,
-          transaction_date: formData.transaction_date,
-        });
+        try {
+          await createTransaction({
+            product_id: parseInt(formData.product_id),
+            client_telegram: formData.client_telegram,
+            client_name: formData.client_name,
+            status: formData.status,
+            notes: formData.notes,
+            custom_amount: formData.custom_amount ? parseFloat(formData.custom_amount) : undefined,
+            currency: formData.currency,
+            transaction_date: formData.transaction_date,
+          });
+          successCount++;
+          await new Promise(resolve => setTimeout(resolve, 100));
+        } catch (err) {
+          console.error(`Ошибка создания транзакции ${i + 1}:`, err);
+        }
       }
 
-      toast.success(`Создано транзакций: ${qty}`);
+      if (successCount === qty) {
+        toast.success(`Создано транзакций: ${qty}`);
+      } else if (successCount > 0) {
+        toast.warning(`Создано ${successCount} из ${qty} транзакций`);
+      } else {
+        toast.error('Не удалось создать транзакции');
+      }
+      
       resetForm();
       onSuccess();
       onOpenChange(false);
     } catch (error) {
-      toast.error('Ошибка создания транзакции');
+      toast.error('Ошибка создания транзакций');
     } finally {
       setLoading(false);
     }
