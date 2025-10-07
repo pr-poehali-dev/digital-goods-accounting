@@ -169,6 +169,34 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             """)
             product_stats = cur.fetchall()
             
+            if date_filter == 'all':
+                cur.execute("""
+                    SELECT MIN("transaction_date"::date), MAX("transaction_date"::date)
+                    FROM transactions WHERE status = 'completed'
+                """)
+                date_range = cur.fetchone()
+                chart_start = date_range[0] if date_range and date_range[0] else datetime.now().date()
+                chart_end = datetime.now().date()
+            elif date_filter == 'today':
+                chart_start = chart_end = today
+            elif date_filter == 'week':
+                chart_start = week_start
+                chart_end = today
+            elif date_filter == 'month':
+                chart_start = month_start
+                chart_end = today
+            elif date_filter == 'custom' and start_date and end_date:
+                chart_start = datetime.strptime(start_date, '%Y-%m-%d').date()
+                chart_end = datetime.strptime(end_date, '%Y-%m-%d').date()
+            else:
+                chart_start = chart_end = datetime.now().date()
+            
+            all_dates = []
+            current = chart_start
+            while current <= chart_end:
+                all_dates.append(current.isoformat())
+                current += timedelta(days=1)
+            
             cur.execute(f"""
                 SELECT "transaction_date"::date as date, COUNT(*) as count, 
                     SUM(CASE WHEN currency = 'USD' THEN profit * {exchange_rate} ELSE profit END) as profit, 
@@ -176,9 +204,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 FROM transactions
                 WHERE status = 'completed' {date_condition}
                 GROUP BY "transaction_date"::date
-                ORDER BY date ASC
             """)
-            daily_stats = cur.fetchall()
+            daily_stats_raw = cur.fetchall()
             
             product_analytics = []
             for row in product_stats:
@@ -189,16 +216,34 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'total_revenue': float(row[3]) if row[3] else 0
                 })
             
-            daily_analytics = []
-            for row in daily_stats:
-                daily_analytics.append({
-                    'date': row[0].isoformat() if row[0] else None,
+            daily_map = {}
+            for row in daily_stats_raw:
+                daily_map[row[0].isoformat()] = {
                     'count': row[1],
                     'profit': float(row[2]) if row[2] else 0,
-                    'revenue': float(row[3]) if row[3] else 0,
-                    'expenses': 0,
-                    'net_profit': float(row[2]) if row[2] else 0
-                })
+                    'revenue': float(row[3]) if row[3] else 0
+                }
+            
+            daily_analytics = []
+            for date_str in all_dates:
+                if date_str in daily_map:
+                    daily_analytics.append({
+                        'date': date_str,
+                        'count': daily_map[date_str]['count'],
+                        'profit': daily_map[date_str]['profit'],
+                        'revenue': daily_map[date_str]['revenue'],
+                        'expenses': 0,
+                        'net_profit': daily_map[date_str]['profit']
+                    })
+                else:
+                    daily_analytics.append({
+                        'date': date_str,
+                        'count': 0,
+                        'profit': 0,
+                        'revenue': 0,
+                        'expenses': 0,
+                        'net_profit': 0
+                    })
             
             cur.close()
             conn.close()
