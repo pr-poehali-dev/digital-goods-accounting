@@ -33,6 +33,9 @@ const AdminPanel = () => {
     is_admin: false
   });
   const navigate = useNavigate();
+  
+  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+  const authToken = localStorage.getItem('auth_token');
 
   useEffect(() => {
     const authToken = localStorage.getItem('auth_token');
