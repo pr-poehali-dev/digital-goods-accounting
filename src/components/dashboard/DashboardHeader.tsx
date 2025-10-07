@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import Icon from '@/components/ui/icon';
 
 interface DashboardHeaderProps {
@@ -8,6 +9,8 @@ interface DashboardHeaderProps {
   onNewTransaction: () => void;
   onLogout: () => void;
   isAdmin?: boolean;
+  exchangeRate: number;
+  onExchangeRateChange: (rate: number) => void;
 }
 
 const DashboardHeader = ({ 
@@ -15,7 +18,9 @@ const DashboardHeader = ({
   onCurrencyChange, 
   onNewTransaction, 
   onLogout,
-  isAdmin = false
+  isAdmin = false,
+  exchangeRate,
+  onExchangeRateChange
 }: DashboardHeaderProps) => {
   const navigate = useNavigate();
   
@@ -33,6 +38,17 @@ const DashboardHeader = ({
             </div>
           </div>
           <div className="flex gap-2">
+            <div className="flex items-center gap-2 mr-4 px-3 py-1 bg-muted rounded-lg">
+              <span className="text-sm font-medium">Курс $:</span>
+              <Input 
+                type="number"
+                value={exchangeRate}
+                onChange={(e) => onExchangeRateChange(Number(e.target.value))}
+                className="h-7 w-20 px-2 text-sm"
+                min="1"
+                step="0.01"
+              />
+            </div>
             <div className="flex items-center gap-2 mr-4 px-3 py-1 bg-muted rounded-lg">
               <span className="text-sm font-medium">Валюта:</span>
               <Button 

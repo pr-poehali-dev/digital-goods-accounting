@@ -38,7 +38,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             date_filter = params.get('date_filter', 'month')
             start_date = params.get('start_date')
             end_date = params.get('end_date')
-            exchange_rate = 95.5
+            exchange_rate = float(params.get('exchange_rate', 82))
             
             if date_filter == 'today':
                 today = datetime.now().date()
@@ -182,10 +182,6 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 chart_end = datetime.strptime(end_date, '%Y-%m-%d').date()
             else:
                 chart_start = chart_end = datetime.now().date()
-            
-            days_count = (chart_end - chart_start).days + 1
-            if days_count > 90:
-                chart_start = chart_end - timedelta(days=89)
             
             all_dates = []
             current = chart_start

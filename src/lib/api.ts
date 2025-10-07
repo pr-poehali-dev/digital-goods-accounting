@@ -63,11 +63,12 @@ export const getTransactions = async () => {
   return response.json();
 };
 
-export const getStats = async (dateFilter?: string, startDate?: string, endDate?: string) => {
+export const getStats = async (dateFilter?: string, startDate?: string, endDate?: string, exchangeRate?: number) => {
   let url = `${API_URLS.transactions}?action=stats`;
   if (dateFilter) url += `&date_filter=${dateFilter}`;
   if (startDate) url += `&start_date=${startDate}`;
   if (endDate) url += `&end_date=${endDate}`;
+  if (exchangeRate) url += `&exchange_rate=${exchangeRate}`;
   
   const response = await fetch(url);
   return response.json();

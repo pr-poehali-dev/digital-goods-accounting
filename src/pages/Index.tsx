@@ -51,7 +51,7 @@ const Index = () => {
     setIsAuthenticated(true);
   }, [navigate]);
   const [displayCurrency, setDisplayCurrency] = useState<'RUB' | 'USD'>('RUB');
-  const [exchangeRate, setExchangeRate] = useState(95.50);
+  const [exchangeRate, setExchangeRate] = useState(82);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [dateFilter, setDateFilter] = useState<'today' | 'week' | 'month' | 'all' | 'custom'>('all');
   const [customDateRange, setCustomDateRange] = useState({ start: '', end: '' });
@@ -74,15 +74,10 @@ const Index = () => {
       const startDate = dateFilter === 'custom' ? customDateRange.start : undefined;
       const endDate = dateFilter === 'custom' ? customDateRange.end : undefined;
       
-      const [statsResult, transactionsResult, rateResult] = await Promise.all([
-        getStats(dateFilter, startDate, endDate),
+      const [statsResult, transactionsResult] = await Promise.all([
+        getStats(dateFilter, startDate, endDate, exchangeRate),
         getTransactions(),
-        getExchangeRate().catch(() => ({ rate: 95.50 })),
       ]);
-      
-      if (rateResult?.rate) {
-        setExchangeRate(rateResult.rate);
-      }
       
       setStats(prevStats => {
         if (JSON.stringify(prevStats) === JSON.stringify(statsResult)) {
@@ -252,6 +247,8 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <DashboardHeader
         displayCurrency={displayCurrency}
+        exchangeRate={exchangeRate}
+        onExchangeRateChange={setExchangeRate}
         onCurrencyChange={setDisplayCurrency}
         onNewTransaction={() => setTransactionFormOpen(true)}
         onLogout={handleLogout}
