@@ -89,57 +89,11 @@ const AdminPanel = () => {
       return;
     }
 
-    try {
-      const response = await fetch('https://functions.poehali.dev/0fe2adb1-b56f-4acd-aa46-246d52206d4d', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Auth-Token': authToken || ''
-        },
-        body: JSON.stringify({
-          action: 'create',
-          ...newUser
-        })
-      });
-
-      if (response.ok) {
-        toast.success('Пользователь создан');
-        setIsDialogOpen(false);
-        setNewUser({ email: '', password: '', full_name: '', is_admin: false });
-        loadUsers();
-      } else {
-        const data = await response.json();
-        toast.error(data.error || 'Ошибка создания пользователя');
-      }
-    } catch (error) {
-      toast.error('Ошибка подключения');
-    }
+    toast.error('Создание пользователей временно недоступно. Обновите подписку на poehali.dev/p/pay');
   };
 
   const toggleUserStatus = async (userId: number, isActive: boolean) => {
-    try {
-      const response = await fetch('https://functions.poehali.dev/0fe2adb1-b56f-4acd-aa46-246d52206d4d', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Auth-Token': authToken || ''
-        },
-        body: JSON.stringify({
-          action: 'update',
-          user_id: userId,
-          is_active: !isActive
-        })
-      });
-
-      if (response.ok) {
-        toast.success(isActive ? 'Пользователь деактивирован' : 'Пользователь активирован');
-        loadUsers();
-      } else {
-        toast.error('Ошибка обновления статуса');
-      }
-    } catch (error) {
-      toast.error('Ошибка подключения');
-    }
+    toast.error('Управление пользователями временно недоступно');
   };
 
   const changePassword = async () => {
@@ -148,31 +102,7 @@ const AdminPanel = () => {
       return;
     }
 
-    try {
-      const response = await fetch('https://functions.poehali.dev/0fe2adb1-b56f-4acd-aa46-246d52206d4d', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Auth-Token': authToken || ''
-        },
-        body: JSON.stringify({
-          action: 'update',
-          user_id: selectedUserId,
-          password: newPassword
-        })
-      });
-
-      if (response.ok) {
-        toast.success('Пароль изменен');
-        setIsPasswordDialogOpen(false);
-        setNewPassword('');
-        setSelectedUserId(null);
-      } else {
-        toast.error('Ошибка смены пароля');
-      }
-    } catch (error) {
-      toast.error('Ошибка подключения');
-    }
+    toast.error('Смена пароля временно недоступна');
   };
 
   const handleLogout = () => {
