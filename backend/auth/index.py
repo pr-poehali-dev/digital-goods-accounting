@@ -1,8 +1,6 @@
 import json
 import os
 import psycopg2
-import hmac
-import hashlib
 import bcrypt
 import jwt
 from datetime import datetime, timedelta
@@ -41,13 +39,13 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             action = body.get('action')
             
             if action == 'login':
-                email = body.get('email')
-                password = body.get('password')
+                email = body.get('email', '').replace("'", "''")
+                password = body.get('password', '')
                 
-                cur.execute("""
+                cur.execute(f"""
                     SELECT id, email, password_hash, full_name, is_admin, is_active 
-                    FROM users WHERE email = %s
-                """, (email,))
+                    FROM users WHERE email = '{email}'
+                """)
                 user = cur.fetchone()
                 
                 if not user:
@@ -76,7 +74,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         'isBase64Encoded': False
                     }
                 
-                cur.execute("UPDATE users SET last_login = %s WHERE id = %s", (datetime.now(), user_id))
+                now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                cur.execute(f"UPDATE users SET last_login = '{now}' WHERE id = {user_id}")
                 conn.commit()
                 
                 token = jwt.encode({
@@ -215,17 +214,17 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 action = body.get('action')
                 
                 if action == 'create':
-                    email = body.get('email')
-                    password = body.get('password')
-                    full_name = body.get('full_name')
+                    email = body.get('email', '').replace("'", "''")
+                    password = body.get('password', '')
+                    full_name = body.get('full_name', '').replace("'", "''")
                     is_admin = body.get('is_admin', False)
                     
                     password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
                     
-                    cur.execute("""
+                    cur.execute(f"""
                         INSERT INTO users (email, password_hash, full_name, is_admin) 
-                        VALUES (%s, %s, %s, %s) RETURNING id
-                    """, (email, password_hash, full_name, is_admin))
+                        VALUES ('{email}', '{password_hash}', '{full_name}', {is_admin}) RETURNING id
+                    """)
                     new_id = cur.fetchone()[0]
                     conn.commit()
                     
@@ -237,20 +236,20 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     }
                 
                 elif action == 'update':
-                    user_id = body.get('user_id')
-                    updates = {}
+                    user_id = int(body.get('user_id', 0))
+                    updates = []
                     
                     if 'is_active' in body:
-                        updates['is_active'] = body['is_active']
+                        updates.append(f"is_active = {body['is_active']}")
                     if 'is_admin' in body:
-                        updates['is_admin'] = body['is_admin']
+                        updates.append(f"is_admin = {body['is_admin']}")
                     if 'password' in body and body['password']:
-                        updates['password_hash'] = bcrypt.hashpw(body['password'].encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+                        password_hash = bcrypt.hashpw(body['password'].encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+                        updates.append(f"password_hash = '{password_hash}'")
                     
                     if updates:
-                        set_clause = ', '.join([f"{k} = %s" for k in updates.keys()])
-                        cur.execute(f"UPDATE users SET {set_clause} WHERE id = %s", 
-                                  list(updates.values()) + [user_id])
+                        set_clause = ', '.join(updates)
+                        cur.execute(f"UPDATE users SET {set_clause} WHERE id = {user_id}")
                         conn.commit()
                     
                     return {

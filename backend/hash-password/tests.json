@@ -1,0 +1,11 @@
+[
+  {
+    "name": "Generate bcrypt hash",
+    "request": {
+      "method": "GET"
+    },
+    "expected": {
+      "statusCode": 200
+    }
+  }
+]

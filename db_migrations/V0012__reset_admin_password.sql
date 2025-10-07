@@ -1,0 +1,1 @@
+UPDATE users SET password_hash = '$2b$12$vvxpg64tEFersKGwgulr/eQl1rkpSNWXZo2apTnjOLI6zsbSHZk6C' WHERE email = 'ourcryptoway@gmail.com';
