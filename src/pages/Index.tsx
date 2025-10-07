@@ -168,12 +168,15 @@ const Index = () => {
     
     let cumulativeRevenue = 0;
     let cumulativeCosts = 0;
+    let totalExpensesAdded = 0;
     
-    const result = convertedStats.daily_analytics.map((day: any) => {
+    const result = convertedStats.daily_analytics.map((day: any, index: number) => {
       const dayRevenue = day.revenue || 0;
       const transactionCosts = (day.revenue || 0) - (day.profit || 0);
       const dayExpenses = day.expenses || 0;
-      const dayCosts = transactionCosts + dayExpenses;
+      
+      const dayCosts = transactionCosts + (index === 0 ? dayExpenses : 0);
+      if (index === 0) totalExpensesAdded = dayExpenses;
       
       cumulativeRevenue += dayRevenue;
       cumulativeCosts += dayCosts;
@@ -184,12 +187,6 @@ const Index = () => {
         costs: Math.round(cumulativeCosts),
         profit: Math.round(day.profit || 0),
       };
-    });
-    
-    console.log('📊 График данных:', {
-      totalCostsFromCard: convertedStats.total_costs,
-      lastChartCosts: result[result.length - 1]?.costs,
-      dailyAnalytics: convertedStats.daily_analytics
     });
     
     return result;
