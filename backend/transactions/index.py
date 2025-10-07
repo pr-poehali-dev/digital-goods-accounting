@@ -216,43 +216,45 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'revenue': float(row[3]) if row[3] else 0
                 }
             
-            cur.execute(f"""
-                SELECT amount, start_date, end_date, distribution_type, currency
-                FROM expenses
-                WHERE status = 'active'
-                AND start_date <= '{chart_end.isoformat()}'
-                AND (end_date IS NULL OR end_date >= '{chart_start.isoformat()}')
-            """)
-            expenses_data = cur.fetchall()
-            
+            days_count = len(all_dates)
             daily_expenses = {date_str: 0.0 for date_str in all_dates}
             
-            for exp in expenses_data:
-                amount = float(exp[0])
-                exp_start = exp[1]
-                exp_end = exp[2]
-                dist_type = exp[3]
-                currency = exp[4] if len(exp) > 4 and exp[4] else 'RUB'
+            if days_count <= 31:
+                cur.execute(f"""
+                    SELECT amount, start_date, end_date, distribution_type, currency
+                    FROM expenses
+                    WHERE status = 'active'
+                    AND start_date <= '{chart_end.isoformat()}'
+                    AND (end_date IS NULL OR end_date >= '{chart_start.isoformat()}')
+                """)
+                expenses_data = cur.fetchall()
                 
-                if currency == 'USD':
-                    amount = amount * exchange_rate
-                
-                if dist_type == 'one_time':
-                    date_key = exp_start.isoformat()
-                    if date_key in daily_expenses:
-                        daily_expenses[date_key] += amount
-                else:
-                    actual_start = max(chart_start, exp_start)
-                    actual_end = min(chart_end, exp_end) if exp_end else chart_end
-                    total_days = (exp_end - exp_start).days + 1 if exp_end else 365
-                    daily_amount = amount / total_days
+                for exp in expenses_data:
+                    amount = float(exp[0])
+                    exp_start = exp[1]
+                    exp_end = exp[2]
+                    dist_type = exp[3]
+                    currency = exp[4] if len(exp) > 4 and exp[4] else 'RUB'
                     
-                    current = actual_start
-                    while current <= actual_end:
-                        date_key = current.isoformat()
+                    if currency == 'USD':
+                        amount = amount * exchange_rate
+                    
+                    if dist_type == 'one_time':
+                        date_key = exp_start.isoformat()
                         if date_key in daily_expenses:
-                            daily_expenses[date_key] += daily_amount
-                        current += timedelta(days=1)
+                            daily_expenses[date_key] += amount
+                    else:
+                        actual_start = max(chart_start, exp_start)
+                        actual_end = min(chart_end, exp_end) if exp_end else chart_end
+                        total_days = (exp_end - exp_start).days + 1 if exp_end else 365
+                        daily_amount = amount / total_days
+                        
+                        current = actual_start
+                        while current <= actual_end:
+                            date_key = current.isoformat()
+                            if date_key in daily_expenses:
+                                daily_expenses[date_key] += daily_amount
+                            current += timedelta(days=1)
             
             daily_analytics = []
             for date_str in all_dates:
