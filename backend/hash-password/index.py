@@ -5,8 +5,8 @@ def handler(event, context):
     # Password to hash
     password = "admin123"
     
-    # Generate salt and hash the password
-    salt = bcrypt.gensalt()
+    # Generate salt and hash the password (cost=12)
+    salt = bcrypt.gensalt(12)
     hashed = bcrypt.hashpw(password.encode('utf-8'), salt)
     
     # Return the hash as a string

@@ -89,14 +89,6 @@ const Login = () => {
             >
               {loading ? 'Вход...' : 'Войти'}
             </Button>
-            <div className="pt-2 text-center">
-              <a 
-                href="/reset-password" 
-                className="text-sm text-emerald-400 hover:text-emerald-300"
-              >
-                Забыли пароль?
-              </a>
-            </div>
           </form>
         </CardContent>
       </Card>
