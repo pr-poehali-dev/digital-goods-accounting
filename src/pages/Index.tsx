@@ -167,12 +167,23 @@ const Index = () => {
   const dailyChartData = useMemo(() => {
     if (!convertedStats.daily_analytics || convertedStats.daily_analytics.length === 0) return [];
     
-    return convertedStats.daily_analytics.map((day: any) => ({
-      date: new Date(day.date).toLocaleDateString('ru', { day: 'numeric', month: 'short' }),
-      revenue: Math.round(day.revenue || 0),
-      costs: Math.round(((day.revenue || 0) - (day.profit || 0)) + (day.expenses || 0)),
-      profit: Math.round(day.profit || 0),
-    }));
+    let cumulativeRevenue = 0;
+    let cumulativeCosts = 0;
+    
+    return convertedStats.daily_analytics.map((day: any) => {
+      const dayRevenue = day.revenue || 0;
+      const dayCosts = ((day.revenue || 0) - (day.profit || 0)) + (day.expenses || 0);
+      
+      cumulativeRevenue += dayRevenue;
+      cumulativeCosts += dayCosts;
+      
+      return {
+        date: new Date(day.date).toLocaleDateString('ru', { day: 'numeric', month: 'short' }),
+        revenue: Math.round(cumulativeRevenue),
+        costs: Math.round(cumulativeCosts),
+        profit: Math.round(day.profit || 0),
+      };
+    });
   }, [convertedStats]);
 
   const groupDataByPeriod = useCallback((data: any[], grouping: 'day' | 'week' | 'month' | 'quarter' | 'year') => {
