@@ -27,25 +27,32 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     if method == 'GET':
         today = date.today().isoformat()
         
-        try:
-            url = 'https://www.cbr-xml-daily.ru/daily_json.js'
-            with urllib.request.urlopen(url, timeout=5) as response:
-                data = json.loads(response.read().decode())
-                usd_rate = data['Valute']['USD']['Value']
-                
-                return {
-                    'statusCode': 200,
-                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-                    'body': json.dumps({'rate': usd_rate, 'date': today, 'source': 'cbr'}),
-                    'isBase64Encoded': False
-                }
-        except Exception as e:
-            return {
-                'statusCode': 500,
-                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-                'body': json.dumps({'error': 'Failed to get exchange rate', 'details': str(e), 'fallback_rate': 95.50}),
-                'isBase64Encoded': False
-            }
+        sources = [
+            ('https://www.cbr-xml-daily.ru/daily_json.js', 'cbr', lambda d: d['Valute']['USD']['Value']),
+            ('https://api.exchangerate-api.com/v4/latest/USD', 'exchangerate-api', lambda d: d['rates']['RUB']),
+        ]
+        
+        for url, source_name, extractor in sources:
+            try:
+                with urllib.request.urlopen(url, timeout=5) as response:
+                    data = json.loads(response.read().decode())
+                    usd_rate = float(extractor(data))
+                    
+                    return {
+                        'statusCode': 200,
+                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                        'body': json.dumps({'rate': usd_rate, 'date': today, 'source': source_name}),
+                        'isBase64Encoded': False
+                    }
+            except Exception:
+                continue
+        
+        return {
+            'statusCode': 500,
+            'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+            'body': json.dumps({'error': 'All sources failed', 'fallback_rate': 95.50}),
+            'isBase64Encoded': False
+        }
     
     return {
         'statusCode': 405,
