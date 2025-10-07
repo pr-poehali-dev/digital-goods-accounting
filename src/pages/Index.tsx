@@ -169,8 +169,6 @@ const Index = () => {
     let cumulativeRevenue = 0;
     let cumulativeCosts = 0;
     
-    console.log('💰 РАСЧЕТ ЗАТРАТ ПО ДНЯМ:');
-    
     const result = convertedStats.daily_analytics.map((day: any) => {
       const dayRevenue = day.revenue || 0;
       const dayProfit = day.profit || 0;
@@ -181,8 +179,6 @@ const Index = () => {
       cumulativeRevenue += dayRevenue;
       cumulativeCosts += dayCosts;
       
-      console.log(`${day.date}: себест-ть=${transactionCosts.toFixed(2)}₽ + расходы=${dayExpenses.toFixed(2)}₽ = ${dayCosts.toFixed(2)}₽ (накопит: ${cumulativeCosts.toFixed(2)}₽)`);
-      
       return {
         date: new Date(day.date).toLocaleDateString('ru', { day: 'numeric', month: 'short' }),
         revenue: Math.round(cumulativeRevenue),
@@ -190,8 +186,6 @@ const Index = () => {
         profit: Math.round(day.profit || 0),
       };
     });
-    
-    console.log(`📊 ИТОГО: График=${cumulativeCosts.toFixed(2)}₽ vs Карточка=${convertedStats.total_costs.toFixed(2)}₽ (разница: ${(convertedStats.total_costs - cumulativeCosts).toFixed(2)}₽)`);
     
     return result;
   }, [convertedStats]);
