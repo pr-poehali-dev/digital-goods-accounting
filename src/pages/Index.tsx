@@ -169,9 +169,11 @@ const Index = () => {
     let cumulativeRevenue = 0;
     let cumulativeCosts = 0;
     
-    return convertedStats.daily_analytics.map((day: any) => {
+    const result = convertedStats.daily_analytics.map((day: any) => {
       const dayRevenue = day.revenue || 0;
-      const dayCosts = ((day.revenue || 0) - (day.profit || 0)) + (day.expenses || 0);
+      const transactionCosts = (day.revenue || 0) - (day.profit || 0);
+      const dayExpenses = day.expenses || 0;
+      const dayCosts = transactionCosts + dayExpenses;
       
       cumulativeRevenue += dayRevenue;
       cumulativeCosts += dayCosts;
@@ -183,6 +185,14 @@ const Index = () => {
         profit: Math.round(day.profit || 0),
       };
     });
+    
+    console.log('📊 График данных:', {
+      totalCostsFromCard: convertedStats.total_costs,
+      lastChartCosts: result[result.length - 1]?.costs,
+      dailyAnalytics: convertedStats.daily_analytics
+    });
+    
+    return result;
   }, [convertedStats]);
 
   const groupDataByPeriod = useCallback((data: any[], grouping: 'day' | 'week' | 'month' | 'quarter' | 'year') => {
