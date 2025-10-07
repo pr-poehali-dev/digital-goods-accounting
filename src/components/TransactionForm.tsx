@@ -40,6 +40,7 @@ const TransactionForm = ({ open, onOpenChange, onSuccess }: TransactionFormProps
     custom_amount: '',
     currency: 'RUB',
     transaction_date: new Date().toISOString().split('T')[0],
+    quantity: '1',
   });
 
   useEffect(() => {
@@ -59,6 +60,8 @@ const TransactionForm = ({ open, onOpenChange, onSuccess }: TransactionFormProps
 
   const selectedProduct = products.find(p => p.id === parseInt(formData.product_id));
   
+  const quantity = parseInt(formData.quantity) || 1;
+  
   const getSalePrice = () => {
     if (formData.custom_amount) return parseFloat(formData.custom_amount);
     if (!selectedProduct) return 0;
@@ -74,8 +77,10 @@ const TransactionForm = ({ open, onOpenChange, onSuccess }: TransactionFormProps
       : selectedProduct.cost_price;
   };
   
-  const saleAmount = getSalePrice();
-  const costPrice = getCostPrice();
+  const saleAmountPerItem = getSalePrice();
+  const costPricePerItem = getCostPrice();
+  const saleAmount = saleAmountPerItem * quantity;
+  const costPrice = costPricePerItem * quantity;
   const calculatedProfit = saleAmount - costPrice;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -83,18 +88,22 @@ const TransactionForm = ({ open, onOpenChange, onSuccess }: TransactionFormProps
     setLoading(true);
 
     try {
-      await createTransaction({
-        product_id: parseInt(formData.product_id),
-        client_telegram: formData.client_telegram,
-        client_name: formData.client_name,
-        status: formData.status,
-        notes: formData.notes,
-        custom_amount: formData.custom_amount ? parseFloat(formData.custom_amount) : undefined,
-        currency: formData.currency,
-        transaction_date: formData.transaction_date,
-      });
+      const qty = parseInt(formData.quantity) || 1;
+      
+      for (let i = 0; i < qty; i++) {
+        await createTransaction({
+          product_id: parseInt(formData.product_id),
+          client_telegram: formData.client_telegram,
+          client_name: formData.client_name,
+          status: formData.status,
+          notes: formData.notes,
+          custom_amount: formData.custom_amount ? parseFloat(formData.custom_amount) : undefined,
+          currency: formData.currency,
+          transaction_date: formData.transaction_date,
+        });
+      }
 
-      toast.success('Транзакция создана');
+      toast.success(`Создано транзакций: ${qty}`);
       resetForm();
       onSuccess();
       onOpenChange(false);
@@ -115,6 +124,7 @@ const TransactionForm = ({ open, onOpenChange, onSuccess }: TransactionFormProps
       custom_amount: '',
       currency: 'RUB',
       transaction_date: new Date().toISOString().split('T')[0],
+      quantity: '1',
     });
   };
 
@@ -165,18 +175,36 @@ const TransactionForm = ({ open, onOpenChange, onSuccess }: TransactionFormProps
                   </div>
                 </RadioGroup>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="custom_amount">Сумма продажи (необязательно)</Label>
-                <Input
-                  id="custom_amount"
-                  type="number"
-                  step="0.01"
-                  placeholder={`${formData.currency === 'USD' ? '$' : '₽'}${getSalePrice().toLocaleString()} (базовая цена)`}
-                  value={formData.custom_amount}
-                  onChange={(e) => setFormData({ ...formData, custom_amount: e.target.value })}
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="quantity">Количество</Label>
+                  <Input
+                    id="quantity"
+                    type="number"
+                    min="1"
+                    step="1"
+                    value={formData.quantity}
+                    onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="custom_amount">Цена за шт (необязательно)</Label>
+                  <Input
+                    id="custom_amount"
+                    type="number"
+                    step="0.01"
+                    placeholder={`${formData.currency === 'USD' ? '$' : '₽'}${getSalePrice().toLocaleString()}`}
+                    value={formData.custom_amount}
+                    onChange={(e) => setFormData({ ...formData, custom_amount: e.target.value })}
+                  />
+                </div>
               </div>
               <div className="p-4 bg-muted/50 rounded-lg space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Количество:</span>
+                  <span className="font-semibold">{quantity} шт</span>
+                </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Цена продажи:</span>
                   <span className="font-semibold">{formData.currency === 'USD' ? '$' : '₽'}{saleAmount.toLocaleString()}</span>
