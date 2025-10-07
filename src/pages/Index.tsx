@@ -190,6 +190,18 @@ const Index = () => {
     return result;
   }, [convertedStats]);
 
+  const actualTotalCosts = useMemo(() => {
+    if (!convertedStats.daily_analytics || convertedStats.daily_analytics.length === 0) return 0;
+    
+    return convertedStats.daily_analytics.reduce((total: number, day: any) => {
+      const dayRevenue = day.revenue || 0;
+      const dayProfit = day.profit || 0;
+      const transactionCosts = dayRevenue - dayProfit;
+      const dayExpenses = day.expenses || 0;
+      return total + transactionCosts + dayExpenses;
+    }, 0);
+  }, [convertedStats]);
+
   const groupDataByPeriod = useCallback((data: any[], grouping: 'day' | 'week' | 'month' | 'quarter' | 'year') => {
     if (!data || data.length === 0) return [];
     
@@ -287,7 +299,7 @@ const Index = () => {
               onCustomDateChange={setCustomDateRange}
             />
 
-            <StatsCards stats={convertedStats} formatCurrency={formatCurrency} />
+            <StatsCards stats={{...convertedStats, total_costs: actualTotalCosts}} formatCurrency={formatCurrency} />
 
             <RevenueChart data={dailyChartData} />
 
