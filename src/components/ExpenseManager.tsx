@@ -61,30 +61,6 @@ const ExpenseManager = () => {
 
   const loadData = async () => {
     try {
-      const mockTypes = [
-        { id: 1, name: 'Маркетинг', description: 'Расходы на рекламу' },
-        { id: 2, name: 'Зарплаты', description: 'Выплаты сотрудникам' },
-      ];
-      
-      const mockExpenses = [
-        {
-          id: 1,
-          expense_type_id: 1,
-          expense_type_name: 'Маркетинг',
-          amount: 50000,
-          description: 'Реклама в соцсетях',
-          start_date: '2024-10-01',
-          end_date: null,
-          distribution_type: 'one_time',
-          status: 'active',
-          currency: 'RUB'
-        }
-      ];
-      
-      setExpenseTypes(mockTypes);
-      setExpenses(mockExpenses);
-      return;
-
       const [typesRes, expensesRes] = await Promise.all([
         fetch(`${API_URL}?action=types`),
         fetch(API_URL),

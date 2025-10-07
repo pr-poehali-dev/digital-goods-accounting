@@ -47,22 +47,6 @@ const AdminPanel = () => {
 
   const loadUsers = async () => {
     try {
-      const mockUsers = [
-        {
-          id: 1,
-          email: 'ourcryptoway@gmail.com',
-          full_name: 'Admin',
-          is_admin: true,
-          is_active: true,
-          created_at: '2024-01-01',
-          last_login: new Date().toISOString()
-        }
-      ];
-      
-      setUsers(mockUsers);
-      setLoading(false);
-      return;
-
       const response = await fetch('https://functions.poehali.dev/0fe2adb1-b56f-4acd-aa46-246d52206d4d?action=users', {
         headers: { 'X-Auth-Token': authToken || '' }
       });

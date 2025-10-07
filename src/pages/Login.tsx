@@ -18,22 +18,6 @@ const Login = () => {
     setLoading(true);
 
     try {
-      if (email === 'ourcryptoway@gmail.com' && password === 'admin123') {
-        const mockUser = {
-          id: 1,
-          email: 'ourcryptoway@gmail.com',
-          full_name: 'Admin',
-          is_admin: true
-        };
-        const mockToken = 'temp-admin-token-' + Date.now();
-        
-        localStorage.setItem('auth_token', mockToken);
-        localStorage.setItem('user', JSON.stringify(mockUser));
-        toast.success('Вход выполнен успешно');
-        navigate('/');
-        return;
-      }
-
       const response = await fetch('https://functions.poehali.dev/0fe2adb1-b56f-4acd-aa46-246d52206d4d', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
