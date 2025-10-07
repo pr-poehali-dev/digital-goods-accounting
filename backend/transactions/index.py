@@ -385,7 +385,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         
         profit = sale_price - cost_price
         
-        transaction_code = 'TX-' + datetime.now().strftime('%Y%m%d%H%M%S')
+        import random
+        transaction_code = 'TX-' + datetime.now().strftime('%Y%m%d%H%M%S') + '-' + str(random.randint(1000, 9999))
         
         cur.execute(
             "INSERT INTO transactions (transaction_code, product_id, client_telegram, client_name, amount, cost_price, profit, status, notes, currency, transaction_date) VALUES ('" + transaction_code + "', " + str(product_id) + ", '" + client_telegram + "', '" + client_name + "', " + str(sale_price) + ", " + str(cost_price) + ", " + str(profit) + ", '" + status + "', '" + notes + "', '" + currency + "', '" + transaction_date + "') RETURNING id"
