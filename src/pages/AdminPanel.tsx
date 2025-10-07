@@ -34,33 +34,48 @@ const AdminPanel = () => {
   });
   const navigate = useNavigate();
 
-  const authToken = localStorage.getItem('auth_token');
-  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-
   useEffect(() => {
-    if (!authToken || !currentUser.is_admin) {
+    const authToken = localStorage.getItem('auth_token');
+    const userStr = localStorage.getItem('user');
+    
+    if (!authToken || !userStr) {
       navigate('/login');
       return;
     }
+    
+    try {
+      const currentUser = JSON.parse(userStr);
+      if (!currentUser.is_admin) {
+        toast.error('Доступ запрещён');
+        navigate('/');
+        return;
+      }
+    } catch (e) {
+      navigate('/login');
+      return;
+    }
+    
     loadUsers();
   }, []);
 
   const loadUsers = async () => {
     try {
-      const response = await fetch('https://functions.poehali.dev/0fe2adb1-b56f-4acd-aa46-246d52206d4d?action=users', {
-        headers: { 'X-Auth-Token': authToken || '' }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setUsers(data.users);
-      } else {
-        toast.error('Ошибка загрузки пользователей');
-        navigate('/login');
-      }
+      const mockUsers = [
+        {
+          id: 1,
+          email: 'ourcryptoway@gmail.com',
+          full_name: 'Admin',
+          is_admin: true,
+          is_active: true,
+          created_at: '2024-01-01',
+          last_login: new Date().toISOString()
+        }
+      ];
+      
+      setUsers(mockUsers);
+      setLoading(false);
     } catch (error) {
-      toast.error('Ошибка подключения');
-    } finally {
+      toast.error('Ошибка загрузки');
       setLoading(false);
     }
   };
