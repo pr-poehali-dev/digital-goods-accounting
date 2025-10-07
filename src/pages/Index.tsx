@@ -166,8 +166,6 @@ const Index = () => {
   const dailyChartData = useMemo(() => {
     if (!convertedStats.daily_analytics || convertedStats.daily_analytics.length === 0) return [];
     
-    let cumulativeRevenue = 0;
-    
     return convertedStats.daily_analytics.map((day: any) => {
       const dayRevenue = day.revenue || 0;
       const dayProfit = day.profit || 0;
@@ -175,11 +173,9 @@ const Index = () => {
       const dayExpenses = day.expenses || 0;
       const dayCosts = transactionCosts + dayExpenses;
       
-      cumulativeRevenue += dayRevenue;
-      
       return {
         date: new Date(day.date).toLocaleDateString('ru', { day: 'numeric', month: 'short' }),
-        revenue: Math.round(cumulativeRevenue),
+        revenue: Math.round(dayRevenue),
         costs: Math.round(dayCosts),
         profit: Math.round(dayProfit),
       };
