@@ -162,8 +162,16 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             product_stats = cur.fetchall()
             
             if date_filter == 'all':
-                chart_end = datetime.now().date()
-                chart_start = chart_end - timedelta(days=89)
+                cur.execute("""
+                    SELECT MIN("transaction_date"::date), MAX("transaction_date"::date)
+                    FROM transactions WHERE status = 'completed'
+                """)
+                date_range = cur.fetchone()
+                if date_range and date_range[0] and date_range[1]:
+                    chart_start = date_range[0]
+                    chart_end = date_range[1]
+                else:
+                    chart_start = chart_end = datetime.now().date()
             elif date_filter == 'today':
                 chart_start = chart_end = today
             elif date_filter == 'week':
