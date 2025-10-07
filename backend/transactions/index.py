@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     '''
-    Business: Управление транзакциями (создание, просмотр, отчётность)
+    Business: Управление транзакциями и аналитика
     Args: event с httpMethod, body для создания транзакций
     Returns: HTTP response со списком транзакций или статистикой
     '''
