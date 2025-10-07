@@ -127,7 +127,7 @@ const TransactionForm = ({ open, onOpenChange, onSuccess }: TransactionFormProps
 
   return (
     <Dialog open={open} onOpenChange={handleDialogClose}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Новая транзакция</DialogTitle>
         </DialogHeader>
