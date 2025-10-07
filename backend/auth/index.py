@@ -100,6 +100,42 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'isBase64Encoded': False
                 }
             
+            elif action == 'reset_password':
+                email = body.get('email', '').replace("'", "''")
+                new_password = body.get('new_password', '')
+                
+                if not email or not new_password:
+                    return {
+                        'statusCode': 400,
+                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                        'body': json.dumps({'error': 'Email and password required'}),
+                        'isBase64Encoded': False
+                    }
+                
+                cur.execute(f"SELECT id FROM users WHERE email = '{email}'")
+                user = cur.fetchone()
+                
+                if not user:
+                    return {
+                        'statusCode': 404,
+                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                        'body': json.dumps({'error': 'User not found'}),
+                        'isBase64Encoded': False
+                    }
+                
+                user_id = user[0]
+                password_hash = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+                
+                cur.execute(f"UPDATE users SET password_hash = '{password_hash}' WHERE id = {user_id}")
+                conn.commit()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'message': 'Password reset successful'}),
+                    'isBase64Encoded': False
+                }
+            
             elif action == 'verify':
                 token = body.get('token')
                 try:
