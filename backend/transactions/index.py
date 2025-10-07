@@ -198,6 +198,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'revenue': float(row[3]) if row[3] else 0
                 })
             
+            expenses = []
+            daily_expenses_map = {}
+            
             if daily_analytics:
                 start_date = daily_analytics[0]['date']
                 end_date = daily_analytics[-1]['date']
@@ -210,8 +213,6 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     AND (e.end_date IS NULL OR e.end_date >= '""" + start_date + """')
                 """)
                 expenses = cur.fetchall()
-                
-                daily_expenses_map = {}
                 
                 for exp in expenses:
                     amount = float(exp[1])
