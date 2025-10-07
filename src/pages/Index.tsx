@@ -167,7 +167,6 @@ const Index = () => {
     if (!convertedStats.daily_analytics || convertedStats.daily_analytics.length === 0) return [];
     
     let cumulativeRevenue = 0;
-    let cumulativeCosts = 0;
     
     const result = convertedStats.daily_analytics.map((day: any) => {
       const dayRevenue = day.revenue || 0;
@@ -177,12 +176,11 @@ const Index = () => {
       const dayCosts = transactionCosts + dayExpenses;
       
       cumulativeRevenue += dayRevenue;
-      cumulativeCosts += dayCosts;
       
       return {
         date: new Date(day.date).toLocaleDateString('ru', { day: 'numeric', month: 'short' }),
         revenue: Math.round(cumulativeRevenue),
-        costs: Math.round(cumulativeCosts),
+        costs: Math.round(dayCosts),
         profit: Math.round(day.profit || 0),
       };
     });
