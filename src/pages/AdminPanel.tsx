@@ -107,20 +107,31 @@ const AdminPanel = () => {
       return;
     }
 
-    const user = users.find(u => u.id === selectedUserId);
-    if (!user) {
-      toast.error('Пользователь не найден');
-      return;
+    try {
+      const response = await fetch('https://functions.poehali.dev/f3f65f30-8151-4e8f-a1f0-d71fe9e87fb0', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Auth-Token': authToken || ''
+        },
+        body: JSON.stringify({
+          action: 'update',
+          user_id: selectedUserId,
+          password: newPassword
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Ошибка смены пароля');
+      }
+
+      toast.success('Пароль успешно изменён');
+      setIsPasswordDialogOpen(false);
+      setNewPassword('');
+      setSelectedUserId(null);
+    } catch (error) {
+      toast.error('Не удалось изменить пароль');
     }
-
-    const savedPasswords = JSON.parse(localStorage.getItem('user_passwords') || '{}');
-    savedPasswords[user.email] = newPassword;
-    localStorage.setItem('user_passwords', JSON.stringify(savedPasswords));
-
-    toast.success('Пароль успешно изменён');
-    setIsPasswordDialogOpen(false);
-    setNewPassword('');
-    setSelectedUserId(null);
   };
 
   const handleLogout = () => {
