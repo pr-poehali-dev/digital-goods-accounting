@@ -63,22 +63,22 @@ const AdminPanel = () => {
 
   const loadUsers = async () => {
     try {
-      const mockUsers = [
-        {
-          id: 1,
-          email: 'ourcryptoway@gmail.com',
-          full_name: 'Admin',
-          is_admin: true,
-          is_active: true,
-          created_at: '2024-01-01',
-          last_login: new Date().toISOString()
+      const response = await fetch('https://functions.poehali.dev/f3f65f30-8151-4e8f-a1f0-d71fe9e87fb0?action=users', {
+        method: 'GET',
+        headers: {
+          'X-Auth-Token': authToken || ''
         }
-      ];
-      
-      setUsers(mockUsers);
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to load users');
+      }
+
+      const data = await response.json();
+      setUsers(data.users || []);
       setLoading(false);
     } catch (error) {
-      toast.error('Ошибка загрузки');
+      toast.error('Ошибка загрузки пользователей');
       setLoading(false);
     }
   };
