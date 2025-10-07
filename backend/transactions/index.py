@@ -251,6 +251,22 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 for day in daily_analytics:
                     day['expenses'] = round(daily_expenses_map.get(day['date'], 0), 2)
                     day['net_profit'] = round(day['profit'] - day['expenses'], 2)
+                
+                existing_dates = {day['date'] for day in daily_analytics}
+                for date_key, expense_amount in daily_expenses_map.items():
+                    if date_key not in existing_dates:
+                        date_obj = datetime.strptime(date_key, '%Y-%m-%d').date()
+                        if date_obj <= datetime.now().date():
+                            daily_analytics.append({
+                                'date': date_key,
+                                'count': 0,
+                                'profit': 0,
+                                'revenue': 0,
+                                'expenses': round(expense_amount, 2),
+                                'net_profit': round(-expense_amount, 2)
+                            })
+                
+                daily_analytics.sort(key=lambda x: x['date'])
             
             cur.close()
             conn.close()
