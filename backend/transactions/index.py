@@ -152,12 +152,12 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             product_stats = cur.fetchall()
             
             cur.execute(f"""
-                SELECT transaction_date::date as date, COUNT(*) as count, 
+                SELECT "transaction_date"::date as date, COUNT(*) as count, 
                     SUM(CASE WHEN currency = 'USD' THEN profit * {exchange_rate} ELSE profit END) as profit, 
                     SUM(CASE WHEN currency = 'USD' THEN amount * {exchange_rate} ELSE amount END) as revenue
                 FROM transactions
                 WHERE status = 'completed' {date_condition.replace('AND', '')}
-                GROUP BY transaction_date::date
+                GROUP BY "transaction_date"::date
                 ORDER BY date ASC
             """)
             daily_stats = cur.fetchall()
