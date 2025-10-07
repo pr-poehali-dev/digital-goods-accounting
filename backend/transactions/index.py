@@ -98,63 +98,64 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 expenses_count = exp_count[0] if exp_count else 0
             
             total_expenses = 0
+            filter_start = None
+            filter_end = None
+            
             if date_filter == 'all':
-                cur.execute(f"""
-                    SELECT SUM(CASE WHEN currency = 'USD' THEN amount * {exchange_rate} ELSE amount END)
-                    FROM expenses
-                    WHERE status = 'active'
+                cur.execute("""
+                    SELECT MIN("transaction_date"::date), MAX("transaction_date"::date)
+                    FROM transactions
+                    WHERE status = 'completed'
                 """)
-                exp_result = cur.fetchone()
-                total_expenses = float(exp_result[0]) if exp_result and exp_result[0] else 0
-            else:
-                filter_start = None
-                filter_end = None
+                date_range = cur.fetchone()
+                if date_range and date_range[0] and date_range[1]:
+                    filter_start = date_range[0].isoformat()
+                    filter_end = date_range[1].isoformat()
+            elif date_filter == 'today':
+                filter_start = filter_end = today.isoformat()
+            elif date_filter == 'week':
+                filter_start = week_start.isoformat()
+                filter_end = today.isoformat()
+            elif date_filter == 'month':
+                filter_start = month_start.isoformat()
+                filter_end = today.isoformat()
+            elif date_filter == 'custom' and start_date and end_date:
+                filter_start = start_date
+                filter_end = end_date
+            
+            if filter_start and filter_end:
+                cur.execute(f"""
+                    SELECT e.amount, e.start_date, e.end_date, e.distribution_type, e.currency
+                    FROM expenses e
+                    WHERE e.status = 'active'
+                    AND e.start_date <= '{filter_end}'
+                    AND (e.end_date IS NULL OR e.end_date >= '{filter_start}')
+                """)
+                expenses_for_period = cur.fetchall()
                 
-                if date_filter == 'today':
-                    filter_start = filter_end = today.isoformat()
-                elif date_filter == 'week':
-                    filter_start = week_start.isoformat()
-                    filter_end = today.isoformat()
-                elif date_filter == 'month':
-                    filter_start = month_start.isoformat()
-                    filter_end = today.isoformat()
-                elif date_filter == 'custom' and start_date and end_date:
-                    filter_start = start_date
-                    filter_end = end_date
-                
-                if filter_start and filter_end:
-                    cur.execute(f"""
-                        SELECT e.amount, e.start_date, e.end_date, e.distribution_type, e.currency
-                        FROM expenses e
-                        WHERE e.status = 'active'
-                        AND e.start_date <= '{filter_end}'
-                        AND (e.end_date IS NULL OR e.end_date >= '{filter_start}')
-                    """)
-                    expenses_for_period = cur.fetchall()
+                for exp in expenses_for_period:
+                    amount = float(exp[0])
+                    exp_start = exp[1]
+                    exp_end = exp[2]
+                    dist_type = exp[3]
+                    currency = exp[4] if len(exp) > 4 and exp[4] else 'RUB'
                     
-                    for exp in expenses_for_period:
-                        amount = float(exp[0])
-                        exp_start = exp[1]
-                        exp_end = exp[2]
-                        dist_type = exp[3]
-                        currency = exp[4] if len(exp) > 4 and exp[4] else 'RUB'
+                    if currency == 'USD':
+                        amount = amount * exchange_rate
+                    
+                    if dist_type == 'one_time':
+                        exp_date_str = exp_start.isoformat()
+                        if filter_start <= exp_date_str <= filter_end:
+                            total_expenses += amount
+                    else:
+                        actual_start = max(datetime.strptime(filter_start, '%Y-%m-%d').date(), exp_start)
+                        actual_end = min(datetime.strptime(filter_end, '%Y-%m-%d').date(), exp_end) if exp_end else datetime.strptime(filter_end, '%Y-%m-%d').date()
                         
-                        if currency == 'USD':
-                            amount = amount * exchange_rate
+                        total_period_days = (exp_end - exp_start).days + 1 if exp_end else 365
+                        filter_period_days = (actual_end - actual_start).days + 1
                         
-                        if dist_type == 'one_time':
-                            exp_date_str = exp_start.isoformat()
-                            if filter_start <= exp_date_str <= filter_end:
-                                total_expenses += amount
-                        else:
-                            actual_start = max(datetime.strptime(filter_start, '%Y-%m-%d').date(), exp_start)
-                            actual_end = min(datetime.strptime(filter_end, '%Y-%m-%d').date(), exp_end) if exp_end else datetime.strptime(filter_end, '%Y-%m-%d').date()
-                            
-                            total_period_days = (exp_end - exp_start).days + 1 if exp_end else 365
-                            filter_period_days = (actual_end - actual_start).days + 1
-                            
-                            if filter_period_days > 0:
-                                total_expenses += (amount / total_period_days) * filter_period_days
+                        if filter_period_days > 0:
+                            total_expenses += (amount / total_period_days) * filter_period_days
             
             cur.execute(f"""
                 SELECT p.name, COUNT(*) as sales_count, 
