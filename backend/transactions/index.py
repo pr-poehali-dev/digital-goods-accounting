@@ -343,8 +343,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         sale_price_usd = float(product[3]) if product[3] else None
         
         if currency == 'USD':
-            if cost_price_usd is not None and sale_price_usd is not None:
-                cost_price = cost_price_usd
+            if sale_price_usd is not None:
+                cost_price = cost_price_usd if cost_price_usd is not None else 0
                 sale_price = float(custom_amount) if custom_amount else sale_price_usd
             else:
                 cost_price = cost_price_rub
