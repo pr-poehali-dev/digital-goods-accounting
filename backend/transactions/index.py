@@ -81,11 +81,17 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             stats = cur.fetchone()
             
             expenses_count = 0
-            if date_condition:
+            if date_filter == 'all':
+                cur.execute("""
+                    SELECT COUNT(*) FROM expenses 
+                    WHERE status = 'active'
+                """)
+                exp_count = cur.fetchone()
+                expenses_count = exp_count[0] if exp_count else 0
+            elif date_condition:
                 cur.execute(f"""
                     SELECT COUNT(*) FROM expenses 
-                    WHERE distribution_type = 'one_time' 
-                    AND status = 'active'
+                    WHERE status = 'active'
                     {date_condition.replace('transaction_date', 'start_date')}
                 """)
                 exp_count = cur.fetchone()
