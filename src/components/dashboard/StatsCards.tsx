@@ -6,6 +6,7 @@ interface StatsCardsProps {
     total_revenue: number;
     total_transactions: number;
     completed_count: number;
+    expenses_count?: number;
     total_profit: number;
     total_costs: number;
   };
@@ -42,7 +43,7 @@ const StatsCards = ({ stats, formatCurrency }: StatsCardsProps) => {
             {stats.total_transactions}
           </div>
           <p className="text-xs text-muted-foreground mt-1">
-            Завершено: {stats.completed_count} • Ожидает: {stats.pending_count}
+            Доходы: {stats.completed_count} • Расходы: {stats.expenses_count || 0}
           </p>
         </CardContent>
       </Card>

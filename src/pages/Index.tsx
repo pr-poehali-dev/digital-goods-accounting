@@ -63,6 +63,7 @@ const Index = () => {
     total_transactions: 0,
     completed_count: 0,
     pending_count: 0,
+    expenses_count: 0,
     product_analytics: [],
     daily_analytics: [],
   });
