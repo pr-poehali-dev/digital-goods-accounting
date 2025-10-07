@@ -76,7 +76,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending_count,
                     COUNT(CASE WHEN status = 'failed' THEN 1 END) as failed_count
                 FROM transactions
-                WHERE 1=1 {date_condition}
+                WHERE status = 'completed' {date_condition}
             """)
             stats = cur.fetchone()
             
@@ -270,11 +270,13 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             revenue = float(stats[1]) if stats[1] else 0
             total_profit_adjusted = revenue - total_costs_with_expenses
             
+            total_transaction_count = (stats[0] or 0) + expenses_count
+            
             return {
                 'statusCode': 200,
                 'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
                 'body': json.dumps({
-                    'total_transactions': stats[0] or 0,
+                    'total_transactions': total_transaction_count,
                     'total_revenue': revenue,
                     'total_costs': total_costs_with_expenses,
                     'total_profit': total_profit_adjusted,
