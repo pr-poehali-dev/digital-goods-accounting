@@ -24,9 +24,9 @@ const StatsCards = ({ stats, formatCurrency }: StatsCardsProps) => {
         </CardHeader>
         <CardContent>
           <div className="text-3xl font-bold text-foreground">
-            {stats.completed_count}
+            {formatCurrency(stats.total_revenue)}
           </div>
-          <p className="text-xs text-muted-foreground mt-1">Всего продаж</p>
+          <p className="text-xs text-muted-foreground mt-1">Всего продаж: {stats.completed_count}</p>
         </CardContent>
       </Card>
 
