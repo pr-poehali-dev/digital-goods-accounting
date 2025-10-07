@@ -11,6 +11,7 @@ interface ProductAnalytics {
 
 interface ProductSalesChartProps {
   data: ProductAnalytics[];
+  displayCurrency?: 'RUB' | 'USD';
 }
 
 const COLORS = [
@@ -21,7 +22,7 @@ const COLORS = [
   'hsl(262, 83%, 58%)'
 ];
 
-const ProductSalesChart = ({ data }: ProductSalesChartProps) => {
+const ProductSalesChart = ({ data, displayCurrency = 'RUB' }: ProductSalesChartProps) => {
   if (!data || data.length === 0) {
     return (
       <Card>
@@ -57,7 +58,13 @@ const ProductSalesChart = ({ data }: ProductSalesChartProps) => {
                 cx="50%"
                 cy="50%"
                 outerRadius={80}
-                label={(entry) => `${entry.name}: ₽${entry.total_revenue.toLocaleString()}`}
+                label={(entry) => {
+                  const symbol = displayCurrency === 'RUB' ? '₽' : '$';
+                  const formatted = displayCurrency === 'RUB' 
+                    ? entry.total_revenue.toLocaleString('ru-RU', { maximumFractionDigits: 0 })
+                    : entry.total_revenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                  return `${entry.name}: ${formatted} ${symbol}`;
+                }}
               >
                 {data.map((_, index) => (
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -74,7 +81,12 @@ const ProductSalesChart = ({ data }: ProductSalesChartProps) => {
                   <p className="text-sm text-muted-foreground">{product.sales_count} продаж</p>
                 </div>
                 <div className="text-right">
-                  <p className="font-semibold text-green-600">₽{product.total_profit.toLocaleString()}</p>
+                  <p className="font-semibold text-green-600">
+                    {displayCurrency === 'RUB' 
+                      ? `₽${product.total_profit.toLocaleString('ru-RU', { maximumFractionDigits: 0 })}`
+                      : `$${product.total_profit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                    }
+                  </p>
                   <p className="text-sm text-muted-foreground">прибыль</p>
                 </div>
               </div>
