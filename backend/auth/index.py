@@ -6,13 +6,9 @@ import jwt
 from datetime import datetime, timedelta
 from typing import Dict, Any
 
-def escape_sql(value: str) -> str:
-    """Escape single quotes for Simple Query Protocol"""
-    return value.replace("'", "''")
-
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     """
-    Business: Secure user authentication and admin management
+    Business: User authentication - email/password login and user management
     Args: event with httpMethod, body, headers
     Returns: HTTP response with auth tokens or user data
     """
@@ -23,7 +19,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'statusCode': 200,
             'headers': {
                 'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'GET, POST, PUT, OPTIONS',
+                'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
                 'Access-Control-Allow-Headers': 'Content-Type, X-Auth-Token',
                 'Access-Control-Max-Age': '86400'
             },
@@ -32,15 +28,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         }
     
     dsn = os.environ.get('DATABASE_URL')
-    jwt_secret = os.environ.get('JWT_SECRET')
-    
-    if not jwt_secret:
-        return {
-            'statusCode': 500,
-            'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-            'body': json.dumps({'error': 'Server configuration error'}),
-            'isBase64Encoded': False
-        }
+    jwt_secret = os.environ.get('JWT_SECRET', 'default-secret-change-in-production')
     
     conn = psycopg2.connect(dsn)
     cur = conn.cursor()
@@ -51,16 +39,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             action = body.get('action')
             
             if action == 'login':
-                email = escape_sql(body.get('email', ''))
+                email = body.get('email', '').replace("'", "''")
                 password = body.get('password', '')
-                
-                if not email or not password:
-                    return {
-                        'statusCode': 400,
-                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-                        'body': json.dumps({'error': 'Email and password required'}),
-                        'isBase64Encoded': False
-                    }
                 
                 cur.execute(f"""
                     SELECT id, email, password_hash, full_name, is_admin, is_active 
@@ -117,6 +97,42 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                             'is_admin': is_admin
                         }
                     }),
+                    'isBase64Encoded': False
+                }
+            
+            elif action == 'reset_password':
+                email = body.get('email', '').replace("'", "''")
+                new_password = body.get('new_password', '')
+                
+                if not email or not new_password:
+                    return {
+                        'statusCode': 400,
+                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                        'body': json.dumps({'error': 'Email and password required'}),
+                        'isBase64Encoded': False
+                    }
+                
+                cur.execute(f"SELECT id FROM users WHERE email = '{email}'")
+                user = cur.fetchone()
+                
+                if not user:
+                    return {
+                        'statusCode': 404,
+                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                        'body': json.dumps({'error': 'User not found'}),
+                        'isBase64Encoded': False
+                    }
+                
+                user_id = user[0]
+                password_hash = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+                
+                cur.execute(f"UPDATE users SET password_hash = '{password_hash}' WHERE id = {user_id}")
+                conn.commit()
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'message': 'Password reset successful'}),
                     'isBase64Encoded': False
                 }
             
@@ -234,26 +250,16 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 action = body.get('action')
                 
                 if action == 'create':
-                    email = escape_sql(body.get('email', ''))
+                    email = body.get('email', '').replace("'", "''")
                     password = body.get('password', '')
-                    full_name = escape_sql(body.get('full_name', ''))
+                    full_name = body.get('full_name', '').replace("'", "''")
                     is_admin = body.get('is_admin', False)
                     
-                    if not email or not password or not full_name:
-                        return {
-                            'statusCode': 400,
-                            'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-                            'body': json.dumps({'error': 'Email, password, and name required'}),
-                            'isBase64Encoded': False
-                        }
-                    
-                    password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt(12)).decode('utf-8')
-                    password_hash_escaped = escape_sql(password_hash)
+                    password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
                     
                     cur.execute(f"""
                         INSERT INTO users (email, password_hash, full_name, is_admin) 
-                        VALUES ('{email}', '{password_hash_escaped}', '{full_name}', {is_admin}) 
-                        RETURNING id
+                        VALUES ('{email}', '{password_hash}', '{full_name}', {is_admin}) RETURNING id
                     """)
                     new_id = cur.fetchone()[0]
                     conn.commit()
@@ -266,16 +272,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     }
                 
                 elif action == 'update':
-                    user_id = body.get('user_id')
-                    
-                    if not user_id:
-                        return {
-                            'statusCode': 400,
-                            'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-                            'body': json.dumps({'error': 'User ID required'}),
-                            'isBase64Encoded': False
-                        }
-                    
+                    user_id = int(body.get('user_id', 0))
                     updates = []
                     
                     if 'is_active' in body:
@@ -283,9 +280,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     if 'is_admin' in body:
                         updates.append(f"is_admin = {body['is_admin']}")
                     if 'password' in body and body['password']:
-                        password_hash = bcrypt.hashpw(body['password'].encode('utf-8'), bcrypt.gensalt(12)).decode('utf-8')
-                        password_hash_escaped = escape_sql(password_hash)
-                        updates.append(f"password_hash = '{password_hash_escaped}'")
+                        password_hash = bcrypt.hashpw(body['password'].encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+                        updates.append(f"password_hash = '{password_hash}'")
                     
                     if updates:
                         set_clause = ', '.join(updates)
