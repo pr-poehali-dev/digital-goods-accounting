@@ -313,18 +313,25 @@ const Index = () => {
           </TabsContent>
 
           <TabsContent value="analytics" className="space-y-6">
-            <AnalyticsMetrics stats={stats} />
+            <DateFilter
+              dateFilter={dateFilter}
+              customDateRange={customDateRange}
+              onDateFilterChange={setDateFilter}
+              onCustomDateChange={setCustomDateRange}
+            />
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <ProductSalesChart data={convertedStats.product_analytics} displayCurrency={displayCurrency} />
-              <SalesDynamicsChart data={convertedStats.daily_analytics} />
+              <ProductSalesChart 
+                data={convertedStats.product_analytics} 
+                displayCurrency={displayCurrency}
+                useNetProfit={true}
+              />
+              <ProfitDynamicsChart
+                data={analyticsChartData}
+                grouping={analyticsGrouping}
+                onGroupingChange={setAnalyticsGrouping}
+              />
             </div>
-
-            <ProfitDynamicsChart
-              data={analyticsChartData}
-              grouping={analyticsGrouping}
-              onGroupingChange={setAnalyticsGrouping}
-            />
           </TabsContent>
 
           <TabsContent value="expenses">

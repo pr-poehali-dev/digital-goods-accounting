@@ -12,6 +12,7 @@ interface ProductAnalytics {
 interface ProductSalesChartProps {
   data: ProductAnalytics[];
   displayCurrency?: 'RUB' | 'USD';
+  useNetProfit?: boolean;
 }
 
 const COLORS = [
@@ -22,29 +23,32 @@ const COLORS = [
   'hsl(262, 83%, 58%)'
 ];
 
-const ProductSalesChart = ({ data, displayCurrency = 'RUB' }: ProductSalesChartProps) => {
+const ProductSalesChart = ({ data, displayCurrency = 'RUB', useNetProfit = false }: ProductSalesChartProps) => {
   if (!data || data.length === 0) {
     return (
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Icon name="PieChart" size={18} />
-            Продажи по товарам
+            {useNetProfit ? 'Прибыль по товарам' : 'Продажи по товарам'}
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-center text-muted-foreground py-8">Нет данных о продажах</p>
+          <p className="text-center text-muted-foreground py-8">Нет данных</p>
         </CardContent>
       </Card>
     );
   }
+
+  const dataKey = useNetProfit ? 'total_profit' : 'total_revenue';
+  const chartTitle = useNetProfit ? 'Прибыль по товарам' : 'Продажи по товарам';
 
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Icon name="PieChart" size={18} />
-          Продажи по товарам
+          {chartTitle}
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -53,16 +57,17 @@ const ProductSalesChart = ({ data, displayCurrency = 'RUB' }: ProductSalesChartP
             <PieChart>
               <Pie
                 data={data}
-                dataKey="total_revenue"
+                dataKey={dataKey}
                 nameKey="name"
                 cx="50%"
                 cy="50%"
                 outerRadius={80}
                 label={(entry) => {
+                  const value = useNetProfit ? entry.total_profit : entry.total_revenue;
                   const symbol = displayCurrency === 'RUB' ? '₽' : '$';
                   const formatted = displayCurrency === 'RUB' 
-                    ? entry.total_revenue.toLocaleString('ru-RU', { maximumFractionDigits: 0 })
-                    : entry.total_revenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    ? value.toLocaleString('ru-RU', { maximumFractionDigits: 0 })
+                    : value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                   return `${entry.name}: ${formatted} ${symbol}`;
                 }}
               >
