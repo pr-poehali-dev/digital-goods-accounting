@@ -4,10 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Icon from '@/components/ui/icon';
-import TelegramAuth from '@/components/TelegramAuth';
 import ProductManager from '@/components/ProductManager';
 import TransactionForm from '@/components/TransactionForm';
-import AdminSettings from '@/components/AdminSettings';
 import ExpenseManager from '@/components/ExpenseManager';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import DateFilter from '@/components/dashboard/DateFilter';
@@ -262,10 +260,6 @@ const Index = () => {
               <Icon name="TrendingUp" size={16} />
               Аналитика
             </TabsTrigger>
-            <TabsTrigger value="settings" className="gap-2">
-              <Icon name="Settings" size={16} />
-              Настройки
-            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
@@ -323,10 +317,6 @@ const Index = () => {
 
           <TabsContent value="expenses">
             <ExpenseManager />
-          </TabsContent>
-
-          <TabsContent value="settings">
-            <AdminSettings />
           </TabsContent>
         </Tabs>
       </div>
