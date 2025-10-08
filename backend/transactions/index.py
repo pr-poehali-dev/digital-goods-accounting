@@ -302,14 +302,17 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'isBase64Encoded': False
             }
         
-        cur.execute('''
+        limit = int(params.get('limit', 1000))
+        offset = int(params.get('offset', 0))
+        
+        cur.execute(f'''
             SELECT t.id, t.transaction_code, t.product_id, p.name, t.client_telegram, 
                    t.client_name, t.amount, t.cost_price, t.profit, t.status, 
                    t."transaction_date", t.notes, t.currency
             FROM transactions t
             LEFT JOIN products p ON t.product_id = p.id
             ORDER BY t."transaction_date" DESC
-            LIMIT 100
+            LIMIT {limit} OFFSET {offset}
         ''')
         rows = cur.fetchall()
         
