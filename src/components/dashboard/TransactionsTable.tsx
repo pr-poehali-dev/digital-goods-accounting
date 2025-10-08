@@ -108,7 +108,7 @@ const TransactionsTable = ({
                 <TableRow key={transaction.id} className="hover:bg-muted/50">
                   <TableCell className="font-medium">{transaction.transaction_code}</TableCell>
                   <TableCell className="text-muted-foreground">
-                    {new Date(transaction.transaction_date).toLocaleDateString('ru')}
+                    {transaction.transaction_date ? new Date(transaction.transaction_date + 'T12:00:00').toLocaleDateString('ru', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—'}
                   </TableCell>
                   <TableCell>
                     {transaction.client_telegram ? (
