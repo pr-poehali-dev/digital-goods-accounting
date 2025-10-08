@@ -101,6 +101,13 @@ export const updateTransactionStatus = async (id: number, status: string) => {
   return response.json();
 };
 
+export const deleteTransaction = async (id: number) => {
+  const response = await fetch(`${API_URLS.transactions}?id=${id}`, {
+    method: 'DELETE',
+  });
+  return response.json();
+};
+
 export const getExchangeRate = async () => {
   const response = await fetch(API_URLS.exchangeRate);
   return response.json();

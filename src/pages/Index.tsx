@@ -16,7 +16,7 @@ import AnalyticsMetrics from '@/components/dashboard/AnalyticsMetrics';
 import ProductSalesChart from '@/components/dashboard/ProductSalesChart';
 import SalesDynamicsChart from '@/components/dashboard/SalesDynamicsChart';
 import ProfitDynamicsChart from '@/components/dashboard/ProfitDynamicsChart';
-import { getStats, getTransactions, getExchangeRate } from '@/lib/api';
+import { getStats, getTransactions, getExchangeRate, deleteTransaction } from '@/lib/api';
 import { toast } from 'sonner';
 
 interface Transaction {
@@ -83,6 +83,7 @@ const Index = () => {
     daily_analytics: [],
   });
   const [transactionFormOpen, setTransactionFormOpen] = useState(false);
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
 
   const loadData = useCallback(async () => {
     try {
@@ -134,6 +135,23 @@ const Index = () => {
     localStorage.removeItem('auth_token');
     localStorage.removeItem('user');
     navigate('/login');
+  };
+
+  const handleDeleteTransaction = async (id: number) => {
+    if (!confirm('Удалить транзакцию?')) return;
+    
+    try {
+      await deleteTransaction(id);
+      toast.success('Транзакция удалена');
+      loadData();
+    } catch (error) {
+      toast.error('Ошибка удаления');
+    }
+  };
+
+  const handleEditTransaction = (transaction: Transaction) => {
+    setEditingTransaction(transaction);
+    setTransactionFormOpen(true);
   };
 
   const convertAmount = useCallback((amount: number, fromCurrency: string = 'RUB') => {
@@ -305,7 +323,7 @@ const Index = () => {
 
             <RevenueChart data={dailyChartData} />
 
-            <TransactionsTable transactions={transactions} maxRows={10} />
+            <TransactionsTable transactions={transactions} maxRows={10} onDelete={handleDeleteTransaction} onEdit={handleEditTransaction} />
           </TabsContent>
 
           <TabsContent value="transactions" className="space-y-6">
@@ -324,7 +342,7 @@ const Index = () => {
                 </div>
               </CardHeader>
             </Card>
-            <TransactionsTable transactions={transactions} showProfit title="Все транзакции" enablePagination />
+            <TransactionsTable transactions={transactions} showProfit title="Все транзакции" enablePagination onDelete={handleDeleteTransaction} onEdit={handleEditTransaction} />
           </TabsContent>
 
           <TabsContent value="products">

@@ -25,6 +25,8 @@ interface TransactionsTableProps {
   maxRows?: number;
   title?: string;
   enablePagination?: boolean;
+  onDelete?: (id: number) => void;
+  onEdit?: (transaction: Transaction) => void;
 }
 
 const TransactionsTable = ({ 
@@ -32,7 +34,9 @@ const TransactionsTable = ({
   showProfit = false, 
   maxRows, 
   title = 'Последние транзакции',
-  enablePagination = false
+  enablePagination = false,
+  onDelete,
+  onEdit
 }: TransactionsTableProps) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(20);
@@ -101,6 +105,7 @@ const TransactionsTable = ({
                 <TableHead className="text-right">Сумма</TableHead>
                 {showProfit && <TableHead className="text-right">Прибыль</TableHead>}
                 <TableHead>Статус</TableHead>
+                {(onEdit || onDelete) && <TableHead className="text-right">Действия</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -139,6 +144,32 @@ const TransactionsTable = ({
                       <Badge variant="destructive">Отклонена</Badge>
                     )}
                   </TableCell>
+                  {(onEdit || onDelete) && (
+                    <TableCell className="text-right">
+                      <div className="flex gap-2 justify-end">
+                        {onEdit && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => onEdit(transaction)}
+                            className="h-8 w-8 p-0"
+                          >
+                            <Icon name="Pencil" size={16} />
+                          </Button>
+                        )}
+                        {onDelete && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => onDelete(transaction.id)}
+                            className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                          >
+                            <Icon name="Trash2" size={16} />
+                          </Button>
+                        )}
+                      </div>
+                    </TableCell>
+                  )}
                 </TableRow>
               ))}
             </TableBody>
