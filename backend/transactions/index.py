@@ -353,7 +353,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         transaction_date = body_data.get('transaction_date', datetime.now().strftime('%Y-%m-%d'))
         
         cur.execute(
-            "SELECT cost_price, sale_price, cost_price_usd, sale_price_usd FROM products WHERE id = " + str(product_id)
+            "SELECT cost_price, sale_price, cost_price_usd, sale_price_usd FROM products WHERE id = %s",
+            (product_id,)
         )
         product = cur.fetchone()
         
@@ -389,7 +390,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         transaction_code = 'TX-' + datetime.now().strftime('%Y%m%d%H%M%S') + '-' + str(random.randint(1000, 9999))
         
         cur.execute(
-            "INSERT INTO transactions (transaction_code, product_id, client_telegram, client_name, amount, cost_price, profit, status, notes, currency, transaction_date) VALUES ('" + transaction_code + "', " + str(product_id) + ", '" + client_telegram + "', '" + client_name + "', " + str(sale_price) + ", " + str(cost_price) + ", " + str(profit) + ", '" + status + "', '" + notes + "', '" + currency + "', '" + transaction_date + "') RETURNING id"
+            """INSERT INTO transactions (transaction_code, product_id, client_telegram, client_name, amount, cost_price, profit, status, notes, currency, transaction_date) 
+               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id""",
+            (transaction_code, product_id, client_telegram, client_name, sale_price, cost_price, profit, status, notes, currency, transaction_date)
         )
         transaction_id = cur.fetchone()[0]
         
@@ -410,7 +413,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         status = body_data.get('status')
         
         cur.execute(
-            "UPDATE transactions SET status = '" + status + "' WHERE id = " + str(transaction_id)
+            "UPDATE transactions SET status = %s WHERE id = %s",
+            (status, transaction_id)
         )
         
         conn.commit()
@@ -429,7 +433,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         transaction_id = params.get('id')
         
         cur.execute(
-            "DELETE FROM transactions WHERE id = " + str(transaction_id)
+            "DELETE FROM transactions WHERE id = %s",
+            (transaction_id,)
         )
         
         conn.commit()
