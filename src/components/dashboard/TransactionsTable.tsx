@@ -1,6 +1,9 @@
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Icon from '@/components/ui/icon';
 
 interface Transaction {
@@ -21,15 +24,39 @@ interface TransactionsTableProps {
   showProfit?: boolean;
   maxRows?: number;
   title?: string;
+  enablePagination?: boolean;
 }
 
 const TransactionsTable = ({ 
   transactions, 
   showProfit = false, 
   maxRows, 
-  title = 'Последние транзакции' 
+  title = 'Последние транзакции',
+  enablePagination = false
 }: TransactionsTableProps) => {
-  const displayTransactions = maxRows ? transactions.slice(0, maxRows) : transactions;
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(20);
+
+  const sortedTransactions = [...transactions].sort((a, b) => 
+    new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime()
+  );
+
+  const totalPages = enablePagination ? Math.ceil(sortedTransactions.length / itemsPerPage) : 1;
+  const startIndex = enablePagination ? (currentPage - 1) * itemsPerPage : 0;
+  const endIndex = enablePagination ? startIndex + itemsPerPage : sortedTransactions.length;
+  
+  const displayTransactions = maxRows 
+    ? sortedTransactions.slice(0, maxRows) 
+    : sortedTransactions.slice(startIndex, endIndex);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const handleItemsPerPageChange = (value: string) => {
+    setItemsPerPage(Number(value));
+    setCurrentPage(1);
+  };
 
   return (
     <Card className="animate-fade-in" style={{ animationDelay: '0.6s' }}>
@@ -40,6 +67,27 @@ const TransactionsTable = ({
         </CardTitle>
       </CardHeader>
       <CardContent>
+        {enablePagination && sortedTransactions.length > 0 && (
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Показывать по:</span>
+              <Select value={itemsPerPage.toString()} onValueChange={handleItemsPerPageChange}>
+                <SelectTrigger className="w-[100px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="20">20</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                  <SelectItem value="100">100</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <span className="text-sm text-muted-foreground">
+              Показаны {startIndex + 1}-{Math.min(endIndex, sortedTransactions.length)} из {sortedTransactions.length}
+            </span>
+          </div>
+        )}
         {displayTransactions.length === 0 ? (
           <p className="text-center text-muted-foreground py-8">Транзакций пока нет</p>
         ) : (
@@ -95,6 +143,51 @@ const TransactionsTable = ({
               ))}
             </TableBody>
           </Table>
+        )}
+        {enablePagination && totalPages > 1 && (
+          <div className="flex items-center justify-center gap-2 mt-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+            >
+              <Icon name="ChevronLeft" size={16} />
+            </Button>
+            <div className="flex gap-1">
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                let pageNum;
+                if (totalPages <= 5) {
+                  pageNum = i + 1;
+                } else if (currentPage <= 3) {
+                  pageNum = i + 1;
+                } else if (currentPage >= totalPages - 2) {
+                  pageNum = totalPages - 4 + i;
+                } else {
+                  pageNum = currentPage - 2 + i;
+                }
+                return (
+                  <Button
+                    key={pageNum}
+                    variant={currentPage === pageNum ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => handlePageChange(pageNum)}
+                    className="w-10"
+                  >
+                    {pageNum}
+                  </Button>
+                );
+              })}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+            >
+              <Icon name="ChevronRight" size={16} />
+            </Button>
+          </div>
         )}
       </CardContent>
     </Card>

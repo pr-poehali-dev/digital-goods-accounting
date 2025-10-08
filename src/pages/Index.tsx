@@ -324,7 +324,7 @@ const Index = () => {
                 </div>
               </CardHeader>
             </Card>
-            <TransactionsTable transactions={transactions} showProfit title="Все транзакции" />
+            <TransactionsTable transactions={transactions} showProfit title="Все транзакции" enablePagination />
           </TabsContent>
 
           <TabsContent value="products">
