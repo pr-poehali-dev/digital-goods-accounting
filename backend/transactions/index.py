@@ -315,6 +315,15 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         
         transactions = []
         for row in rows:
+            date_value = row[10]
+            if date_value:
+                if hasattr(date_value, 'date'):
+                    date_str = date_value.date().isoformat()
+                else:
+                    date_str = date_value.isoformat()
+            else:
+                date_str = None
+            
             transactions.append({
                 'id': row[0],
                 'transaction_code': row[1],
@@ -326,7 +335,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'cost_price': float(row[7]),
                 'profit': float(row[8]),
                 'status': row[9],
-                'transaction_date': row[10].isoformat() if row[10] else None,
+                'transaction_date': date_str,
                 'notes': row[11],
                 'currency': row[12] if len(row) > 12 else 'RUB'
             })
