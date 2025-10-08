@@ -46,6 +46,17 @@ const TransactionForm = ({ open, onOpenChange, onSuccess }: TransactionFormProps
   useEffect(() => {
     if (open) {
       loadProducts();
+      setFormData({
+        product_id: '',
+        client_telegram: '',
+        client_name: '',
+        status: 'completed',
+        notes: '',
+        custom_amount: '',
+        currency: 'RUB',
+        transaction_date: new Date().toISOString().split('T')[0],
+        quantity: '1',
+      });
     }
   }, [open]);
 
@@ -90,10 +101,11 @@ const TransactionForm = ({ open, onOpenChange, onSuccess }: TransactionFormProps
     try {
       const qty = parseInt(formData.quantity) || 1;
       let successCount = 0;
+      let lastError = '';
       
       for (let i = 0; i < qty; i++) {
         try {
-          await createTransaction({
+          const response = await createTransaction({
             product_id: parseInt(formData.product_id),
             client_telegram: formData.client_telegram,
             client_name: formData.client_name,
@@ -103,24 +115,31 @@ const TransactionForm = ({ open, onOpenChange, onSuccess }: TransactionFormProps
             currency: formData.currency,
             transaction_date: formData.transaction_date,
           });
-          successCount++;
+          
+          if (response.error) {
+            lastError = response.error;
+            console.error(`Ошибка создания транзакции ${i + 1}:`, response.error);
+          } else {
+            successCount++;
+          }
+          
           await new Promise(resolve => setTimeout(resolve, 100));
-        } catch (err) {
+        } catch (err: any) {
+          lastError = err?.message || 'Неизвестная ошибка';
           console.error(`Ошибка создания транзакции ${i + 1}:`, err);
         }
       }
 
       if (successCount === qty) {
         toast.success(`Создано транзакций: ${qty}`);
+        resetForm();
+        onSuccess();
+        onOpenChange(false);
       } else if (successCount > 0) {
         toast.warning(`Создано ${successCount} из ${qty} транзакций`);
       } else {
-        toast.error('Не удалось создать транзакции');
+        toast.error(lastError || 'Не удалось создать транзакции. Проверьте, что товар существует');
       }
-      
-      resetForm();
-      onSuccess();
-      onOpenChange(false);
     } catch (error) {
       toast.error('Ошибка создания транзакций');
     } finally {
