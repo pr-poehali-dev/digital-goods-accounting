@@ -38,6 +38,7 @@ const TransactionForm = ({ open, onOpenChange, onSuccess }: TransactionFormProps
     status: 'completed',
     notes: '',
     custom_amount: '',
+    custom_cost_price: '',
     currency: 'RUB',
     transaction_date: new Date().toISOString().split('T')[0],
     quantity: '1',
@@ -53,6 +54,7 @@ const TransactionForm = ({ open, onOpenChange, onSuccess }: TransactionFormProps
         status: 'completed',
         notes: '',
         custom_amount: '',
+        custom_cost_price: '',
         currency: 'RUB',
         transaction_date: new Date().toISOString().split('T')[0],
         quantity: '1',
@@ -82,6 +84,7 @@ const TransactionForm = ({ open, onOpenChange, onSuccess }: TransactionFormProps
   };
   
   const getCostPrice = () => {
+    if (formData.custom_cost_price) return parseFloat(formData.custom_cost_price);
     if (!selectedProduct) return 0;
     return formData.currency === 'USD'
       ? (selectedProduct.cost_price_usd || selectedProduct.cost_price)
@@ -112,6 +115,7 @@ const TransactionForm = ({ open, onOpenChange, onSuccess }: TransactionFormProps
             status: formData.status,
             notes: formData.notes,
             custom_amount: formData.custom_amount ? parseFloat(formData.custom_amount) : undefined,
+            custom_cost_price: formData.custom_cost_price ? parseFloat(formData.custom_cost_price) : undefined,
             currency: formData.currency,
             transaction_date: formData.transaction_date,
           });
@@ -155,6 +159,7 @@ const TransactionForm = ({ open, onOpenChange, onSuccess }: TransactionFormProps
       status: 'completed',
       notes: '',
       custom_amount: '',
+      custom_cost_price: '',
       currency: 'RUB',
       transaction_date: new Date().toISOString().split('T')[0],
       quantity: '1',
@@ -227,11 +232,22 @@ const TransactionForm = ({ open, onOpenChange, onSuccess }: TransactionFormProps
                     id="custom_amount"
                     type="number"
                     step="0.01"
-                    placeholder={`${formData.currency === 'USD' ? '$' : '₽'}${getSalePrice().toLocaleString()}`}
+                    placeholder={`${formData.currency === 'USD' ? '$' : '₽'}${selectedProduct ? (formData.currency === 'USD' ? (selectedProduct.sale_price_usd || selectedProduct.sale_price) : selectedProduct.sale_price).toLocaleString() : '0'}`}
                     value={formData.custom_amount}
                     onChange={(e) => setFormData({ ...formData, custom_amount: e.target.value })}
                   />
                 </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="custom_cost_price">Себестоимость за шт (необязательно)</Label>
+                <Input
+                  id="custom_cost_price"
+                  type="number"
+                  step="0.01"
+                  placeholder={`${formData.currency === 'USD' ? '$' : '₽'}${selectedProduct ? (formData.currency === 'USD' ? (selectedProduct.cost_price_usd || selectedProduct.cost_price) : selectedProduct.cost_price).toLocaleString() : '0'}`}
+                  value={formData.custom_cost_price}
+                  onChange={(e) => setFormData({ ...formData, custom_cost_price: e.target.value })}
+                />
               </div>
               <div className="p-4 bg-muted/50 rounded-lg space-y-2">
                 <div className="flex justify-between text-sm">
