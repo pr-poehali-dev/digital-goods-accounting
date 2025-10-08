@@ -19,7 +19,7 @@ const RevenueChart = ({ data }: RevenueChartProps) => {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Icon name="BarChart3" size={18} />
-          Динамика доходов и затрат (последние 7 дней)
+          Динамика доходов и затрат
         </CardTitle>
       </CardHeader>
       <CardContent>
