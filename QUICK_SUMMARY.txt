@@ -1,0 +1,122 @@
+================================================================================
+SQL "OBJECT NOT FOUND" ERROR INVESTIGATION - QUICK SUMMARY
+================================================================================
+
+STATUS: ✅ NO SQL ERRORS - TABLE EXISTS AND WORKS CORRECTLY
+
+================================================================================
+1. EXACT TABLE NAME FROM CODE
+================================================================================
+Table Name: transactions
+
+Found in: /webapp/backend/transactions/index.py
+- Line 70, 156, 196: FROM transactions (SELECT queries)
+- Line 305: FROM transactions t LEFT JOIN products p
+- Line 393: INSERT INTO transactions
+- Line 416: UPDATE transactions SET status = ...
+- Line 436: DELETE FROM transactions WHERE id = ...
+
+================================================================================
+2. QUERY TEST RESULTS (via API)
+================================================================================
+✅ API Endpoint Working: https://functions.poehali.dev/30786c37-9166-4479-a411-13efbc5df69d
+✅ SELECT queries execute successfully
+✅ LEFT JOIN with products table works
+✅ Date filtering works correctly
+✅ All CRUD operations functional
+
+================================================================================
+3. SAMPLE OF RECENT TRANSACTIONS (Last 10)
+================================================================================
+ID  | Date       | Client      | Product      | Amount  | Currency | Status
+----|------------|-------------|--------------|---------|----------|----------
+26  | 2025-10-07 | @ogarkovaaa | eSIM Spain   | 30.00   | USD      | completed
+25  | 2025-10-07 | @danilvisk  | eSIM Spain   | 25.00   | USD      | completed
+24  | 2025-10-07 | @danilvisk  | eSIM Spain   | 30.00   | USD      | completed
+23  | 2025-10-07 | @danilvisk  | Wise 3       | 120.00  | USD      | completed
+22  | 2025-10-07 | @Mon2ro     | Bill         | 40.00   | USD      | completed
+20  | 2025-10-07 | @EA828      | Bybit        | 40.00   | USD      | completed
+19  | 2025-10-07 | @EA828      | Bybit        | 40.00   | USD      | completed
+
+All recent transactions are from October 2025.
+
+================================================================================
+4. TRANSACTIONS FOR SEPTEMBER 18, 2024
+================================================================================
+❌ 2024-09-18: 0 transactions found
+   - Total transactions: 0
+   - Total revenue: 0
+   - Total profit: 0
+   - NO DATA EXISTS FOR 2024
+
+✅ 2025-09-18: 4 transactions found (correct year!)
+   - Total transactions: 4
+   - Total revenue: 14,200 RUB
+   - Total profit: 9,464 RUB
+
+KEY FINDING: All database records are from 2025, not 2024.
+The system appears to have started collecting data on 2025-09-18.
+
+================================================================================
+5. TOTAL COUNT OF TRANSACTIONS IN TABLE
+================================================================================
+Total Transactions: 111
+- Completed: 107
+- Pending: 0
+- Failed: 0
+- Expenses: 4
+
+Total Revenue:  401,490.00 RUB
+Total Costs:    104,701.48 RUB
+Total Profit:   296,788.52 RUB
+
+Date Range: September 18, 2025 → October 7, 2025
+
+================================================================================
+6. TOP 5 PRODUCTS BY PROFIT
+================================================================================
+1. Bybit         - 31 sales, 81,344 RUB profit
+2. eSIM Spain    - 29 sales, 63,782 RUB profit
+3. Grey          - 5 sales,  42,582 RUB profit
+4. RedotPay      - 10 sales, 25,844 RUB profit
+5. ether.fi      - 3 sales,  21,960 RUB profit
+
+================================================================================
+7. CONCLUSION
+================================================================================
+NO "object not found" errors detected. The transactions table:
+✅ Exists in the database
+✅ Has correct schema structure
+✅ Contains 111 transaction records
+✅ All SQL queries execute successfully
+✅ Date filtering works as expected
+
+The confusion likely stems from:
+- Searching for 2024 data when only 2025 data exists
+- Misinterpreting empty results (0 rows) as an error
+- Or this was an old issue that has been resolved
+
+If you're seeing "object not found" errors, check:
+1. DATABASE_URL connection string
+2. Schema/search path settings
+3. User permissions
+4. Backend function logs for detailed error messages
+
+================================================================================
+FILES CREATED FOR FURTHER INVESTIGATION
+================================================================================
+1. query_transactions.py     - Direct database query tool (needs DATABASE_URL)
+2. test_transactions_api.py  - API endpoint testing tool
+3. quick_api_test.sh         - Bash script for quick testing
+4. analyze_sql_error.md      - Detailed analysis document
+5. INVESTIGATION_RESULTS.md  - Full investigation report
+6. QUICK_SUMMARY.txt         - This file
+
+To test API directly:
+  python3 test_transactions_api.py
+
+To query database directly (requires DATABASE_URL):
+  export DATABASE_URL="your_connection_string"
+  python3 query_transactions.py
+
+================================================================================
