@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Icon from '@/components/ui/icon';
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, LabelList } from 'recharts';
 
 interface ProductAnalytics {
   name: string;
@@ -67,7 +67,11 @@ const ProductSalesChart = ({ data, displayCurrency = 'RUB', useNetProfit = false
                 const percentage = (entry[dataKey] / totalValue) * 100;
                 return percentage >= 2 ? entry.name : '';
               }}
-              labelLine
+              labelLine={(entry: any) => {
+                const percentage = (entry.value / totalValue) * 100;
+                if (percentage < 2) return null;
+                return entry;
+              }}
               stroke="none"
             >
               {data.map((_, index) => (
