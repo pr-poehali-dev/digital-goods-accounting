@@ -44,43 +44,6 @@ const ProductSalesChart = ({ data, displayCurrency = 'RUB', useNetProfit = false
   const chartTitle = useNetProfit ? 'Прибыль по товарам' : 'Продажи по товарам';
   
   const totalValue = data.reduce((sum, item) => sum + item[dataKey], 0);
-  
-  const renderCustomLabel = (props: any) => {
-    const { cx, cy, midAngle, outerRadius, name, value } = props;
-    const percentage = (value / totalValue) * 100;
-    
-    if (percentage < 2) return null;
-    
-    const RADIAN = Math.PI / 180;
-    const radius = outerRadius + 30;
-    const x = cx + radius * Math.cos(-midAngle * RADIAN);
-    const y = cy + radius * Math.sin(-midAngle * RADIAN);
-    
-    const lineX = cx + (outerRadius + 5) * Math.cos(-midAngle * RADIAN);
-    const lineY = cy + (outerRadius + 5) * Math.sin(-midAngle * RADIAN);
-    
-    return (
-      <g>
-        <line
-          x1={lineX}
-          y1={lineY}
-          x2={x}
-          y2={y}
-          stroke="#888"
-          strokeWidth={1}
-        />
-        <text
-          x={x}
-          y={y}
-          fill="currentColor"
-          textAnchor={x > cx ? 'start' : 'end'}
-          dominantBaseline="central"
-        >
-          {name}
-        </text>
-      </g>
-    );
-  };
 
   return (
     <Card>
@@ -100,8 +63,10 @@ const ProductSalesChart = ({ data, displayCurrency = 'RUB', useNetProfit = false
               cx="50%"
               cy="50%"
               outerRadius={140}
-              label={renderCustomLabel}
-              labelLine={false}
+              label={(entry) => {
+                const percentage = (entry[dataKey] / totalValue) * 100;
+                return percentage >= 2 ? entry.name : '';
+              }}
               stroke="none"
             >
               {data.map((_, index) => (
