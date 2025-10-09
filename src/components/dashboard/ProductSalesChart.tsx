@@ -42,6 +42,8 @@ const ProductSalesChart = ({ data, displayCurrency = 'RUB', useNetProfit = false
 
   const dataKey = useNetProfit ? 'total_profit' : 'total_revenue';
   const chartTitle = useNetProfit ? 'Прибыль по товарам' : 'Продажи по товарам';
+  
+  const totalValue = data.reduce((sum, item) => sum + item[dataKey], 0);
 
   return (
     <Card>
@@ -61,34 +63,31 @@ const ProductSalesChart = ({ data, displayCurrency = 'RUB', useNetProfit = false
               cx="50%"
               cy="50%"
               outerRadius={140}
-              label={(entry) => entry.name}
+              label={(entry) => {
+                const percentage = (entry[dataKey] / totalValue) * 100;
+                return percentage >= 5 ? entry.name : '';
+              }}
             >
               {data.map((_, index) => (
                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
               ))}
             </Pie>
             <Tooltip
-              formatter={(value: number) => {
-                const symbol = displayCurrency === 'RUB' ? '₽' : '$';
-                const formatted = displayCurrency === 'RUB' 
-                  ? value.toLocaleString('ru-RU', { maximumFractionDigits: 0 })
-                  : value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                return `${formatted} ${symbol}`;
-              }}
               content={({ payload }) => {
                 if (!payload || !payload[0]) return null;
                 const item = payload[0].payload;
+                const percentage = ((item[dataKey] / totalValue) * 100).toFixed(1);
                 const symbol = displayCurrency === 'RUB' ? '₽' : '$';
-                const profitFormatted = displayCurrency === 'RUB' 
-                  ? item.total_profit.toLocaleString('ru-RU', { maximumFractionDigits: 0 })
-                  : item.total_profit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                const valueFormatted = displayCurrency === 'RUB' 
+                  ? item[dataKey].toLocaleString('ru-RU', { maximumFractionDigits: 0 })
+                  : item[dataKey].toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                 
                 return (
                   <div className="bg-background border border-border rounded-lg shadow-lg p-3">
                     <p className="font-semibold mb-1">{item.name}</p>
                     <p className="text-sm text-muted-foreground">{item.sales_count} продаж</p>
                     <p className="text-sm font-medium text-green-600 mt-1">
-                      {profitFormatted} {symbol}
+                      {valueFormatted} {symbol} ({percentage}%)
                     </p>
                   </div>
                 );
