@@ -64,33 +64,36 @@ const TransactionForm = ({ open, onOpenChange, onSuccess, editingTransaction }: 
   useEffect(() => {
     if (open) {
       loadProducts();
-      if (editingTransaction) {
-        setFormData({
-          product_id: editingTransaction.product_id.toString(),
-          client_telegram: editingTransaction.client_telegram || '',
-          client_name: editingTransaction.client_name || '',
-          status: editingTransaction.status,
-          notes: editingTransaction.notes || '',
-          custom_amount: editingTransaction.amount.toString(),
-          custom_cost_price: editingTransaction.cost_price.toString(),
-          currency: editingTransaction.currency || 'RUB',
-          transaction_date: editingTransaction.transaction_date || new Date().toISOString().split('T')[0],
-          quantity: '1',
-        });
-      } else {
-        setFormData({
-          product_id: '',
-          client_telegram: '',
-          client_name: '',
-          status: 'completed',
-          notes: '',
-          custom_amount: '',
-          custom_cost_price: '',
-          currency: 'RUB',
-          transaction_date: new Date().toISOString().split('T')[0],
-          quantity: '1',
-        });
-      }
+    }
+  }, [open]);
+
+  useEffect(() => {
+    if (open && editingTransaction) {
+      setFormData({
+        product_id: editingTransaction.product_id.toString(),
+        client_telegram: editingTransaction.client_telegram || '',
+        client_name: editingTransaction.client_name || '',
+        status: editingTransaction.status,
+        notes: editingTransaction.notes || '',
+        custom_amount: editingTransaction.amount.toString(),
+        custom_cost_price: editingTransaction.cost_price.toString(),
+        currency: editingTransaction.currency || 'RUB',
+        transaction_date: editingTransaction.transaction_date || new Date().toISOString().split('T')[0],
+        quantity: '1',
+      });
+    } else if (open && !editingTransaction) {
+      setFormData({
+        product_id: '',
+        client_telegram: '',
+        client_name: '',
+        status: 'completed',
+        notes: '',
+        custom_amount: '',
+        custom_cost_price: '',
+        currency: 'RUB',
+        transaction_date: new Date().toISOString().split('T')[0],
+        quantity: '1',
+      });
     }
   }, [open, editingTransaction]);
 
