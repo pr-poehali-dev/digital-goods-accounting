@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import Icon from '@/components/ui/icon';
-import { getProducts, createTransaction } from '@/lib/api';
+import { getProducts, createTransaction, updateTransaction } from '@/lib/api';
 import { toast } from 'sonner';
 
 interface Product {
@@ -21,13 +21,30 @@ interface Product {
   sale_price_usd?: number;
 }
 
+interface Transaction {
+  id: number;
+  transaction_code: string;
+  product_id: number;
+  product_name: string;
+  client_telegram: string;
+  client_name: string;
+  amount: number;
+  cost_price: number;
+  profit: number;
+  status: string;
+  transaction_date: string;
+  notes: string;
+  currency: string;
+}
+
 interface TransactionFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
+  editingTransaction?: Transaction | null;
 }
 
-const TransactionForm = ({ open, onOpenChange, onSuccess }: TransactionFormProps) => {
+const TransactionForm = ({ open, onOpenChange, onSuccess, editingTransaction }: TransactionFormProps) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
   
@@ -47,20 +64,35 @@ const TransactionForm = ({ open, onOpenChange, onSuccess }: TransactionFormProps
   useEffect(() => {
     if (open) {
       loadProducts();
-      setFormData({
-        product_id: '',
-        client_telegram: '',
-        client_name: '',
-        status: 'completed',
-        notes: '',
-        custom_amount: '',
-        custom_cost_price: '',
-        currency: 'RUB',
-        transaction_date: new Date().toISOString().split('T')[0],
-        quantity: '1',
-      });
+      if (editingTransaction) {
+        setFormData({
+          product_id: editingTransaction.product_id.toString(),
+          client_telegram: editingTransaction.client_telegram || '',
+          client_name: editingTransaction.client_name || '',
+          status: editingTransaction.status,
+          notes: editingTransaction.notes || '',
+          custom_amount: editingTransaction.amount.toString(),
+          custom_cost_price: editingTransaction.cost_price.toString(),
+          currency: editingTransaction.currency || 'RUB',
+          transaction_date: editingTransaction.transaction_date || new Date().toISOString().split('T')[0],
+          quantity: '1',
+        });
+      } else {
+        setFormData({
+          product_id: '',
+          client_telegram: '',
+          client_name: '',
+          status: 'completed',
+          notes: '',
+          custom_amount: '',
+          custom_cost_price: '',
+          currency: 'RUB',
+          transaction_date: new Date().toISOString().split('T')[0],
+          quantity: '1',
+        });
+      }
     }
-  }, [open]);
+  }, [open, editingTransaction]);
 
   const loadProducts = async () => {
     try {
@@ -102,50 +134,74 @@ const TransactionForm = ({ open, onOpenChange, onSuccess }: TransactionFormProps
     setLoading(true);
 
     try {
-      const qty = parseInt(formData.quantity) || 1;
-      let successCount = 0;
-      let lastError = '';
-      
-      for (let i = 0; i < qty; i++) {
-        try {
-          const response = await createTransaction({
-            product_id: parseInt(formData.product_id),
-            client_telegram: formData.client_telegram,
-            client_name: formData.client_name,
-            status: formData.status,
-            notes: formData.notes,
-            custom_amount: formData.custom_amount ? parseFloat(formData.custom_amount) : undefined,
-            custom_cost_price: formData.custom_cost_price ? parseFloat(formData.custom_cost_price) : undefined,
-            currency: formData.currency,
-            transaction_date: formData.transaction_date,
-          });
-          
-          if (response.error) {
-            lastError = response.error;
-            console.error(`Ошибка создания транзакции ${i + 1}:`, response.error);
-          } else {
-            successCount++;
+      if (editingTransaction) {
+        const response = await updateTransaction({
+          id: editingTransaction.id,
+          product_id: parseInt(formData.product_id),
+          client_telegram: formData.client_telegram,
+          client_name: formData.client_name,
+          status: formData.status,
+          notes: formData.notes,
+          custom_amount: formData.custom_amount ? parseFloat(formData.custom_amount) : undefined,
+          custom_cost_price: formData.custom_cost_price ? parseFloat(formData.custom_cost_price) : undefined,
+          currency: formData.currency,
+          transaction_date: formData.transaction_date,
+        });
+        
+        if (response.error) {
+          toast.error(response.error);
+        } else {
+          toast.success('Транзакция обновлена');
+          resetForm();
+          onSuccess();
+          onOpenChange(false);
+        }
+      } else {
+        const qty = parseInt(formData.quantity) || 1;
+        let successCount = 0;
+        let lastError = '';
+        
+        for (let i = 0; i < qty; i++) {
+          try {
+            const response = await createTransaction({
+              product_id: parseInt(formData.product_id),
+              client_telegram: formData.client_telegram,
+              client_name: formData.client_name,
+              status: formData.status,
+              notes: formData.notes,
+              custom_amount: formData.custom_amount ? parseFloat(formData.custom_amount) : undefined,
+              custom_cost_price: formData.custom_cost_price ? parseFloat(formData.custom_cost_price) : undefined,
+              currency: formData.currency,
+              transaction_date: formData.transaction_date,
+            });
+            
+            if (response.error) {
+              lastError = response.error;
+              console.error(`Ошибка создания транзакции ${i + 1}:`, response.error);
+            } else {
+              successCount++;
+            }
+            
+            await new Promise(resolve => setTimeout(resolve, 100));
+          } catch (err: any) {
+            lastError = err?.message || 'Неизвестная ошибка';
+            console.error(`Ошибка создания транзакции ${i + 1}:`, err);
           }
-          
-          await new Promise(resolve => setTimeout(resolve, 100));
-        } catch (err: any) {
-          lastError = err?.message || 'Неизвестная ошибка';
-          console.error(`Ошибка создания транзакции ${i + 1}:`, err);
+        }
+
+        if (successCount === qty) {
+          toast.success(`Создано транзакций: ${qty}`);
+          resetForm();
+          onSuccess();
+          onOpenChange(false);
+        } else if (successCount > 0) {
+          toast.warning(`Создано ${successCount} из ${qty} транзакций`);
+        } else {
+          toast.error(lastError || 'Не удалось создать транзакции. Проверьте, что товар существует');
         }
       }
-
-      if (successCount === qty) {
-        toast.success(`Создано транзакций: ${qty}`);
-        resetForm();
-        onSuccess();
-        onOpenChange(false);
-      } else if (successCount > 0) {
-        toast.warning(`Создано ${successCount} из ${qty} транзакций`);
-      } else {
-        toast.error(lastError || 'Не удалось создать транзакции. Проверьте, что товар существует');
-      }
     } catch (error) {
-      toast.error('Ошибка создания транзакций');
+      toast.error(editingTransaction ? 'Ошибка обновления транзакции' : 'Ошибка создания транзакций');
     } finally {
       setLoading(false);
     }
@@ -177,7 +233,7 @@ const TransactionForm = ({ open, onOpenChange, onSuccess }: TransactionFormProps
     <Dialog open={open} onOpenChange={handleDialogClose}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Новая транзакция</DialogTitle>
+          <DialogTitle>{editingTransaction ? 'Редактировать транзакцию' : 'Новая транзакция'}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
@@ -333,12 +389,12 @@ const TransactionForm = ({ open, onOpenChange, onSuccess }: TransactionFormProps
               {loading ? (
                 <>
                   <Icon name="Loader2" size={16} className="mr-2 animate-spin" />
-                  Создание...
+                  {editingTransaction ? 'Сохранение...' : 'Создание...'}
                 </>
               ) : (
                 <>
                   <Icon name="Check" size={16} className="mr-2" />
-                  Создать транзакцию
+                  {editingTransaction ? 'Сохранить' : 'Создать транзакцию'}
                 </>
               )}
             </Button>

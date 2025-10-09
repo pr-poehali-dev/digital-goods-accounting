@@ -430,12 +430,74 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     if method == 'PUT':
         body_data = json.loads(event.get('body', '{}'))
         transaction_id = body_data.get('id')
-        status = body_data.get('status')
         
-        cur.execute(
-            "UPDATE transactions SET status = %s WHERE id = %s",
-            (status, transaction_id)
-        )
+        if 'product_id' in body_data:
+            product_id = body_data.get('product_id')
+            client_telegram = body_data.get('client_telegram', '')
+            client_name = body_data.get('client_name', '')
+            status = body_data.get('status', 'completed')
+            notes = body_data.get('notes', '')
+            custom_amount = body_data.get('custom_amount')
+            custom_cost_price = body_data.get('custom_cost_price')
+            currency = body_data.get('currency', 'RUB')
+            transaction_date = body_data.get('transaction_date', datetime.now().strftime('%Y-%m-%d'))
+            
+            cur.execute(
+                "SELECT cost_price, sale_price, cost_price_usd, sale_price_usd FROM products WHERE id = %s",
+                (product_id,)
+            )
+            product = cur.fetchone()
+            
+            if not product:
+                cur.close()
+                conn.close()
+                return {
+                    'statusCode': 404,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'error': 'Product not found'}),
+                    'isBase64Encoded': False
+                }
+            
+            cost_price_rub = float(product[0])
+            sale_price_rub = float(product[1])
+            cost_price_usd = float(product[2]) if product[2] else None
+            sale_price_usd = float(product[3]) if product[3] else None
+            
+            if custom_cost_price is not None:
+                cost_price = float(custom_cost_price)
+            elif currency == 'USD':
+                if sale_price_usd is not None:
+                    cost_price = cost_price_usd if cost_price_usd is not None else 0
+                else:
+                    cost_price = cost_price_rub
+            else:
+                cost_price = cost_price_rub
+            
+            if currency == 'USD':
+                if sale_price_usd is not None:
+                    sale_price = float(custom_amount) if custom_amount else sale_price_usd
+                else:
+                    sale_price = float(custom_amount) if custom_amount else sale_price_rub
+            else:
+                sale_price = float(custom_amount) if custom_amount else sale_price_rub
+            
+            profit = sale_price - cost_price
+            
+            cur.execute(
+                """UPDATE transactions 
+                   SET product_id = %s, client_telegram = %s, client_name = %s, 
+                       amount = %s, cost_price = %s, profit = %s, status = %s, 
+                       notes = %s, currency = %s, transaction_date = %s
+                   WHERE id = %s""",
+                (product_id, client_telegram, client_name, sale_price, cost_price, 
+                 profit, status, notes, currency, transaction_date, transaction_id)
+            )
+        else:
+            status = body_data.get('status')
+            cur.execute(
+                "UPDATE transactions SET status = %s WHERE id = %s",
+                (status, transaction_id)
+            )
         
         conn.commit()
         cur.close()

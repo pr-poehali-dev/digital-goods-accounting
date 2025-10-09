@@ -93,6 +93,26 @@ export const createTransaction = async (data: {
   return response.json();
 };
 
+export const updateTransaction = async (data: {
+  id: number;
+  product_id: number;
+  client_telegram?: string;
+  client_name?: string;
+  status?: string;
+  notes?: string;
+  custom_amount?: number;
+  custom_cost_price?: number;
+  currency?: string;
+  transaction_date?: string;
+}) => {
+  const response = await fetch(API_URLS.transactions, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  return response.json();
+};
+
 export const updateTransactionStatus = async (id: number, status: string) => {
   const response = await fetch(API_URLS.transactions, {
     method: 'PUT',

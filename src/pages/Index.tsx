@@ -379,8 +379,12 @@ const Index = () => {
 
       <TransactionForm
         open={transactionFormOpen}
-        onOpenChange={setTransactionFormOpen}
+        onOpenChange={(open) => {
+          setTransactionFormOpen(open);
+          if (!open) setEditingTransaction(null);
+        }}
         onSuccess={loadData}
+        editingTransaction={editingTransaction}
       />
     </div>
   );
