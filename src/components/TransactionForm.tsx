@@ -69,8 +69,10 @@ const TransactionForm = ({ open, onOpenChange, onSuccess, editingTransaction }: 
 
   useEffect(() => {
     if (open && editingTransaction) {
+      console.log('🔍 editingTransaction:', editingTransaction);
+      console.log('🔍 product_id:', editingTransaction.product_id);
       setTimeout(() => {
-        setFormData({
+        const newData = {
           product_id: editingTransaction.product_id.toString(),
           client_telegram: editingTransaction.client_telegram || '',
           client_name: editingTransaction.client_name || '',
@@ -81,8 +83,10 @@ const TransactionForm = ({ open, onOpenChange, onSuccess, editingTransaction }: 
           currency: editingTransaction.currency || 'RUB',
           transaction_date: editingTransaction.transaction_date || new Date().toISOString().split('T')[0],
           quantity: '1',
-        });
-      }, 50);
+        };
+        console.log('📝 Setting formData:', newData);
+        setFormData(newData);
+      }, 100);
     } else if (open && !editingTransaction) {
       setFormData({
         product_id: '',
