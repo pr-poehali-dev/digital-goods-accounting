@@ -81,6 +81,7 @@ export const createTransaction = async (data: {
   status?: string;
   notes?: string;
   custom_amount?: number;
+  custom_cost_price?: number;
   currency?: string;
   transaction_date?: string;
 }) => {

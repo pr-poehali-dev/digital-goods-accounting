@@ -361,6 +361,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         status = body_data.get('status', 'completed')
         notes = body_data.get('notes', '')
         custom_amount = body_data.get('custom_amount')
+        custom_cost_price = body_data.get('custom_cost_price')
         currency = body_data.get('currency', 'RUB')
         transaction_date = body_data.get('transaction_date', datetime.now().strftime('%Y-%m-%d'))
         
@@ -385,15 +386,22 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         cost_price_usd = float(product[2]) if product[2] else None
         sale_price_usd = float(product[3]) if product[3] else None
         
-        if currency == 'USD':
+        if custom_cost_price is not None:
+            cost_price = float(custom_cost_price)
+        elif currency == 'USD':
             if sale_price_usd is not None:
                 cost_price = cost_price_usd if cost_price_usd is not None else 0
-                sale_price = float(custom_amount) if custom_amount else sale_price_usd
             else:
                 cost_price = cost_price_rub
-                sale_price = float(custom_amount) if custom_amount else sale_price_rub
         else:
             cost_price = cost_price_rub
+        
+        if currency == 'USD':
+            if sale_price_usd is not None:
+                sale_price = float(custom_amount) if custom_amount else sale_price_usd
+            else:
+                sale_price = float(custom_amount) if custom_amount else sale_price_rub
+        else:
             sale_price = float(custom_amount) if custom_amount else sale_price_rub
         
         profit = sale_price - cost_price
