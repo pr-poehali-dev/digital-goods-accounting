@@ -69,8 +69,7 @@ const ProductSalesChart = ({ data, displayCurrency = 'RUB', useNetProfit = false
               }}
               labelLine={(entry: any) => {
                 const percentage = (entry.value / totalValue) * 100;
-                if (percentage < 2) return null;
-                return entry;
+                return percentage >= 2;
               }}
               stroke="none"
             >
