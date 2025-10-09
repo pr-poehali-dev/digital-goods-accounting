@@ -67,10 +67,14 @@ const ProductSalesChart = ({ data, displayCurrency = 'RUB', useNetProfit = false
                 const percentage = (entry[dataKey] / totalValue) * 100;
                 return percentage >= 2 ? entry.name : '';
               }}
-              labelLine={false}
+              labelLine={(entry) => {
+                const percentage = (entry[dataKey] / totalValue) * 100;
+                return percentage >= 2;
+              }}
+              stroke="none"
             >
               {data.map((_, index) => (
-                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="none" />
               ))}
             </Pie>
             <Tooltip
