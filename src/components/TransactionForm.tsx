@@ -68,25 +68,20 @@ const TransactionForm = ({ open, onOpenChange, onSuccess, editingTransaction }: 
   }, [open]);
 
   useEffect(() => {
-    if (open && editingTransaction) {
-      console.log('🔍 editingTransaction:', editingTransaction);
-      console.log('🔍 product_id:', editingTransaction.product_id);
-      setTimeout(() => {
-        const newData = {
-          product_id: editingTransaction.product_id.toString(),
-          client_telegram: editingTransaction.client_telegram || '',
-          client_name: editingTransaction.client_name || '',
-          status: editingTransaction.status,
-          notes: editingTransaction.notes || '',
-          custom_amount: editingTransaction.amount.toString(),
-          custom_cost_price: editingTransaction.cost_price.toString(),
-          currency: editingTransaction.currency || 'RUB',
-          transaction_date: editingTransaction.transaction_date || new Date().toISOString().split('T')[0],
-          quantity: '1',
-        };
-        console.log('📝 Setting formData:', newData);
-        setFormData(newData);
-      }, 100);
+    if (open && editingTransaction && products.length > 0) {
+      const newData = {
+        product_id: editingTransaction.product_id.toString(),
+        client_telegram: editingTransaction.client_telegram || '',
+        client_name: editingTransaction.client_name || '',
+        status: editingTransaction.status,
+        notes: editingTransaction.notes || '',
+        custom_amount: editingTransaction.amount.toString(),
+        custom_cost_price: editingTransaction.cost_price.toString(),
+        currency: editingTransaction.currency || 'RUB',
+        transaction_date: editingTransaction.transaction_date || new Date().toISOString().split('T')[0],
+        quantity: '1',
+      };
+      setFormData(newData);
     } else if (open && !editingTransaction) {
       setFormData({
         product_id: '',
@@ -101,7 +96,7 @@ const TransactionForm = ({ open, onOpenChange, onSuccess, editingTransaction }: 
         quantity: '1',
       });
     }
-  }, [open, editingTransaction]);
+  }, [open, editingTransaction, products]);
 
   const loadProducts = async () => {
     try {
