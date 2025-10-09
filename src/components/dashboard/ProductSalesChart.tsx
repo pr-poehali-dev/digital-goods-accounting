@@ -67,8 +67,8 @@ const ProductSalesChart = ({ data, displayCurrency = 'RUB', useNetProfit = false
                 const percentage = (entry[dataKey] / totalValue) * 100;
                 return percentage >= 2 ? entry.name : '';
               }}
-              labelLine={(entry) => {
-                const percentage = (entry[dataKey] / totalValue) * 100;
+              labelLine={(props) => {
+                const percentage = (props[dataKey] / totalValue) * 100;
                 return percentage >= 2;
               }}
               stroke="none"
