@@ -9,14 +9,17 @@ import Icon from '@/components/ui/icon';
 interface Transaction {
   id: number;
   transaction_code: string;
+  product_id: number;
   product_name: string;
   client_telegram: string;
   client_name: string;
   amount: number;
+  cost_price: number;
   profit: number;
   status: string;
   transaction_date: string;
-  currency?: string;
+  notes: string;
+  currency: string;
 }
 
 interface TransactionsTableProps {
