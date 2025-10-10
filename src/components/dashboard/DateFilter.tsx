@@ -4,9 +4,9 @@ import { Input } from '@/components/ui/input';
 import Icon from '@/components/ui/icon';
 
 interface DateFilterProps {
-  dateFilter: 'today' | 'week' | 'month' | 'all' | 'custom';
+  dateFilter: 'today' | 'week' | 'month' | 'quarter' | 'year' | 'all' | 'custom';
   customDateRange: { start: string; end: string };
-  onDateFilterChange: (filter: 'today' | 'week' | 'month' | 'all' | 'custom') => void;
+  onDateFilterChange: (filter: 'today' | 'week' | 'month' | 'quarter' | 'year' | 'all' | 'custom') => void;
   onCustomDateChange: (range: { start: string; end: string }) => void;
 }
 
@@ -52,6 +52,22 @@ const DateFilter = ({
             >
               <Icon name="CalendarRange" size={14} className="mr-2" />
               Месяц
+            </Button>
+            <Button 
+              variant={dateFilter === 'quarter' ? 'default' : 'outline'} 
+              size="sm"
+              onClick={() => onDateFilterChange('quarter')}
+            >
+              <Icon name="Calendar" size={14} className="mr-2" />
+              Квартал
+            </Button>
+            <Button 
+              variant={dateFilter === 'year' ? 'default' : 'outline'} 
+              size="sm"
+              onClick={() => onDateFilterChange('year')}
+            >
+              <Icon name="CalendarDays" size={14} className="mr-2" />
+              Год
             </Button>
             <Button 
               variant={dateFilter === 'custom' ? 'default' : 'outline'} 

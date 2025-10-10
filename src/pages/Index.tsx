@@ -11,7 +11,7 @@ import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import DateFilter from '@/components/dashboard/DateFilter';
 import StatsCards from '@/components/dashboard/StatsCards';
 import RevenueChart from '@/components/dashboard/RevenueChart';
-import TransactionsTable from '@/components/dashboard/TransactionsTable';
+import AverageMetrics from '@/components/dashboard/AverageMetrics';
 import AnalyticsMetrics from '@/components/dashboard/AnalyticsMetrics';
 import ProductSalesChart from '@/components/dashboard/ProductSalesChart';
 import SalesDynamicsChart from '@/components/dashboard/SalesDynamicsChart';
@@ -71,7 +71,7 @@ const Index = () => {
     fetchRate();
   }, []);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [dateFilter, setDateFilter] = useState<'today' | 'week' | 'month' | 'all' | 'custom'>('all');
+  const [dateFilter, setDateFilter] = useState<'today' | 'week' | 'month' | 'quarter' | 'year' | 'all' | 'custom'>('all');
   const [customDateRange, setCustomDateRange] = useState({ start: '', end: '' });
   const [analyticsGrouping, setAnalyticsGrouping] = useState<'day' | 'week' | 'month' | 'quarter' | 'year'>('month');
   const [stats, setStats] = useState({
@@ -225,6 +225,24 @@ const Index = () => {
     }, 0);
   }, [convertedStats]);
 
+  const averageMetrics = useMemo(() => {
+    if (!convertedStats.daily_analytics || convertedStats.daily_analytics.length === 0) {
+      return { avgSalesPerDay: 0, avgProfitPerDay: 0, avgCheck: 0, avgMargin: 0 };
+    }
+
+    const days = convertedStats.daily_analytics.length;
+    const totalCount = convertedStats.daily_analytics.reduce((sum: number, d: any) => sum + (d.count || 0), 0);
+    const totalProfit = convertedStats.daily_analytics.reduce((sum: number, d: any) => sum + (d.profit || 0), 0);
+    const totalRevenue = convertedStats.daily_analytics.reduce((sum: number, d: any) => sum + (d.revenue || 0), 0);
+
+    return {
+      avgSalesPerDay: totalCount / days,
+      avgProfitPerDay: totalProfit / days,
+      avgCheck: totalCount > 0 ? totalRevenue / totalCount : 0,
+      avgMargin: totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0
+    };
+  }, [convertedStats]);
+
   const groupDataByPeriod = useCallback((data: any[], grouping: 'day' | 'week' | 'month' | 'quarter' | 'year') => {
     if (!data || data.length === 0) return [];
     
@@ -324,9 +342,9 @@ const Index = () => {
 
             <StatsCards stats={{...convertedStats, total_costs: actualTotalCosts}} formatCurrency={formatCurrency} />
 
-            <RevenueChart data={dailyChartData} />
+            <AverageMetrics data={averageMetrics} formatCurrency={formatCurrency} />
 
-            <TransactionsTable transactions={transactions} maxRows={10} onDelete={handleDeleteTransaction} onEdit={handleEditTransaction} />
+            <RevenueChart data={dailyChartData} />
           </TabsContent>
 
           <TabsContent value="transactions" className="space-y-6">
