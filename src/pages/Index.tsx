@@ -12,6 +12,7 @@ import DateFilter from '@/components/dashboard/DateFilter';
 import StatsCards from '@/components/dashboard/StatsCards';
 import RevenueChart from '@/components/dashboard/RevenueChart';
 import AverageMetrics from '@/components/dashboard/AverageMetrics';
+import TransactionsTable from '@/components/dashboard/TransactionsTable';
 import AnalyticsMetrics from '@/components/dashboard/AnalyticsMetrics';
 import ProductSalesChart from '@/components/dashboard/ProductSalesChart';
 import SalesDynamicsChart from '@/components/dashboard/SalesDynamicsChart';
