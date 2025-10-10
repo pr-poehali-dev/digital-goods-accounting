@@ -36,8 +36,8 @@ const AverageMetrics = ({ data, formatCurrency }: AverageMetricsProps) => {
     },
     {
       title: 'Средняя маржа',
-      value: `${data.avgMargin.toFixed(1)}%`,
-      icon: 'Percent',
+      value: `${data.avgMargin.toFixed(2)}x`,
+      icon: 'TrendingUp',
       color: 'text-orange-600',
       bg: 'bg-orange-50'
     }

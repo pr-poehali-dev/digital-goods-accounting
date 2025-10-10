@@ -235,12 +235,13 @@ const Index = () => {
     const totalCount = convertedStats.daily_analytics.reduce((sum: number, d: any) => sum + (d.count || 0), 0);
     const totalProfit = convertedStats.daily_analytics.reduce((sum: number, d: any) => sum + (d.profit || 0), 0);
     const totalRevenue = convertedStats.daily_analytics.reduce((sum: number, d: any) => sum + (d.revenue || 0), 0);
+    const totalCosts = totalRevenue - totalProfit;
 
     return {
       avgSalesPerDay: totalCount / days,
       avgProfitPerDay: totalProfit / days,
       avgCheck: totalCount > 0 ? totalRevenue / totalCount : 0,
-      avgMargin: totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0
+      avgMargin: totalCosts > 0 ? totalRevenue / totalCosts : 0
     };
   }, [convertedStats]);
 
