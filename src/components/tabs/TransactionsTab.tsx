@@ -53,15 +53,11 @@ const TransactionsTab = ({
       if (transactionFilters.product !== 'all' && t.product_id.toString() !== transactionFilters.product) return false;
       
       if (transactionFilters.dateFrom) {
-        const transDate = new Date(t.transaction_date);
-        const filterDate = new Date(transactionFilters.dateFrom);
-        if (transDate < filterDate) return false;
+        if (t.transaction_date < transactionFilters.dateFrom) return false;
       }
       
       if (transactionFilters.dateTo) {
-        const transDate = new Date(t.transaction_date);
-        const filterDate = new Date(transactionFilters.dateTo);
-        if (transDate > filterDate) return false;
+        if (t.transaction_date > transactionFilters.dateTo) return false;
       }
       
       if (transactionFilters.searchText) {
