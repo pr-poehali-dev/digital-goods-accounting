@@ -66,6 +66,7 @@ const ClientsBubbles = ({ clients, onClientUpdate }: Props) => {
 
       if (bubblesRef.current.length === 0) {
         const sortedByRevenue = [...clients].sort((a, b) => b.total_revenue - a.total_revenue);
+        const sortedByPurchases = [...clients].sort((a, b) => b.purchase_count - a.purchase_count);
         const totalClients = sortedByRevenue.length;
         
         bubblesRef.current = clients.map((client) => {
@@ -73,15 +74,22 @@ const ClientsBubbles = ({ clients, onClientUpdate }: Props) => {
           
           let autoImportance = client.importance;
           if (client.importance === 'medium') {
-            const clientIndex = sortedByRevenue.findIndex(c => 
+            const revenueIndex = sortedByRevenue.findIndex(c => 
               c.client_telegram === client.client_telegram && 
               c.client_name === client.client_name
             );
-            const topPercent = (clientIndex / totalClients) * 100;
+            const purchaseIndex = sortedByPurchases.findIndex(c => 
+              c.client_telegram === client.client_telegram && 
+              c.client_name === client.client_name
+            );
             
-            if (topPercent < 5) autoImportance = 'critical';
-            else if (topPercent < 15) autoImportance = 'high';
-            else if (topPercent < 50) autoImportance = 'medium';
+            const revenuePercent = (revenueIndex / totalClients) * 100;
+            const purchasePercent = (purchaseIndex / totalClients) * 100;
+            const bestPercent = Math.min(revenuePercent, purchasePercent);
+            
+            if (bestPercent < 5 || client.purchase_count >= 20) autoImportance = 'critical';
+            else if (bestPercent < 15 || client.purchase_count >= 10) autoImportance = 'high';
+            else if (bestPercent < 50 || client.purchase_count >= 5) autoImportance = 'medium';
             else autoImportance = 'low';
           }
           
