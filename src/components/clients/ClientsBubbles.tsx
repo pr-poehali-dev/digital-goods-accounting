@@ -213,15 +213,10 @@ const ClientsBubbles = ({ clients, onClientUpdate }: Props) => {
         ctx.shadowOffsetY = 2;
 
         ctx.fillStyle = '#ffffff';
-        ctx.font = `bold ${Math.max(13, bubble.radius / 3.5)}px system-ui, -apple-system, sans-serif`;
+        ctx.font = `bold ${Math.max(14, bubble.radius / 3)}px system-ui, -apple-system, sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(shortName, bubble.x, bubble.y - 5);
-
-        ctx.shadowBlur = 3;
-        ctx.shadowOffsetY = 1;
-        ctx.font = `600 ${Math.max(11, bubble.radius / 4.5)}px system-ui, -apple-system, sans-serif`;
-        ctx.fillText(`${bubble.client.purchase_count} покупок`, bubble.x, bubble.y + bubble.radius + 18);
+        ctx.fillText(shortName, bubble.x, bubble.y);
         
         ctx.shadowColor = 'transparent';
         ctx.shadowBlur = 0;
@@ -278,7 +273,9 @@ const ClientsBubbles = ({ clients, onClientUpdate }: Props) => {
           </div>
         </div>
 
-        <div ref={containerRef} className="relative rounded-lg border bg-card overflow-hidden">
+        <div ref={containerRef} className="relative rounded-lg border overflow-hidden" style={{
+          background: 'linear-gradient(135deg, #f8fafc 0%, #e0e7ff 50%, #fef3c7 100%)'
+        }}>
           <canvas 
             ref={canvasRef} 
             className="w-full cursor-pointer"
