@@ -64,13 +64,12 @@ const ClientsBubbles = ({ clients, onClientUpdate }: Props) => {
       canvas.width = width;
       canvas.height = height;
 
-      if (bubblesRef.current.length === 0) {
-        const sortedByRevenue = [...clients].sort((a, b) => b.total_revenue - a.total_revenue);
-        const totalClients = sortedByRevenue.length;
-        const maxRevenue = sortedByRevenue[0]?.total_revenue || 1;
-        const minRevenue = sortedByRevenue[sortedByRevenue.length - 1]?.total_revenue || 0;
-        
-        bubblesRef.current = clients.map((client) => {
+      const sortedByRevenue = [...clients].sort((a, b) => b.total_revenue - a.total_revenue);
+      const totalClients = sortedByRevenue.length;
+      const maxRevenue = sortedByRevenue[0]?.total_revenue || 1;
+      const minRevenue = sortedByRevenue[sortedByRevenue.length - 1]?.total_revenue || 0;
+      
+      bubblesRef.current = clients.map((client) => {
           const normalizedRevenue = (client.total_revenue - minRevenue) / (maxRevenue - minRevenue);
           const radius = Math.max(40, Math.min(120, 40 + normalizedRevenue * 80));
           
@@ -97,8 +96,7 @@ const ClientsBubbles = ({ clients, onClientUpdate }: Props) => {
             targetX: width / 2,
             targetY: height / 2
           };
-        });
-      }
+      });
     };
 
     updateSize();
