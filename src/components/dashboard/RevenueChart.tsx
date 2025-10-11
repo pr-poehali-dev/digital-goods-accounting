@@ -27,19 +27,14 @@ const RevenueChart = ({ data }: RevenueChartProps) => {
     });
   };
 
-  const { chartData, normalizedData, anomalies, yMax } = useMemo(() => {
-    if (data.length === 0) return { chartData: [], normalizedData: [], anomalies: [], yMax: 100000 };
+  const { chartData, normalizedData, anomalies } = useMemo(() => {
+    if (data.length === 0) return { chartData: [], normalizedData: [], anomalies: [] };
 
-    const allValues = data.flatMap(d => [d.revenue, d.costs]);
-    const sorted = [...allValues].sort((a, b) => a - b);
-    const p90Index = Math.floor(sorted.length * 0.9);
-    const threshold = sorted[p90Index];
-    const yMaxValue = Math.ceil(threshold * 1.2);
-
+    const threshold = 100000;
     const anomalyList: Array<{ date: string; revenue: number; costs: number; index: number }> = [];
     
     const normalized = data.map((item, idx) => {
-      const hasAnomaly = item.revenue > threshold || item.costs > threshold;
+      const hasAnomaly = item.revenue > threshold;
       
       if (hasAnomaly) {
         anomalyList.push({
@@ -52,8 +47,8 @@ const RevenueChart = ({ data }: RevenueChartProps) => {
 
       return {
         ...item,
-        displayRevenue: Math.min(item.revenue, yMaxValue),
-        displayCosts: Math.min(item.costs, yMaxValue),
+        displayRevenue: Math.min(item.revenue, threshold),
+        displayCosts: item.costs,
         hasAnomaly
       };
     });
@@ -63,7 +58,7 @@ const RevenueChart = ({ data }: RevenueChartProps) => {
     if (showMA30) result = calculateMA(result, 30, 'displayRevenue');
     if (showMA90) result = calculateMA(result, 90, 'displayRevenue');
 
-    return { chartData: result, normalizedData: normalized, anomalies: anomalyList, yMax: yMaxValue };
+    return { chartData: result, normalizedData: normalized, anomalies: anomalyList };
   }, [data, showMA7, showMA30, showMA90]);
 
   const formatNumber = (value: number) => {
@@ -163,7 +158,8 @@ const RevenueChart = ({ data }: RevenueChartProps) => {
             <YAxis 
               stroke="hsl(215, 16%, 65%)" 
               fontSize={12}
-              domain={[0, yMax]}
+              domain={[0, 100000]}
+              ticks={[0, 20000, 40000, 60000, 80000, 100000]}
               tickFormatter={formatAxisNumber}
             />
             <Tooltip content={<CustomTooltip />} />
@@ -176,18 +172,19 @@ const RevenueChart = ({ data }: RevenueChartProps) => {
               <ReferenceDot 
                 key={idx}
                 x={anomaly.date} 
-                y={yMax}
-                r={6}
+                y={100000}
+                r={7}
                 fill="hsl(24, 95%, 53%)"
                 stroke="white"
                 strokeWidth={2}
               >
                 <Label 
-                  value={`⚠️ ${formatNumber(anomaly.revenue)}`}
+                  value={formatNumber(anomaly.revenue)}
                   position="top"
                   fill="hsl(24, 95%, 53%)"
                   fontSize={11}
-                  fontWeight="bold"
+                  fontWeight="600"
+                  offset={5}
                 />
               </ReferenceDot>
             ))}
