@@ -35,15 +35,26 @@ const RevenueChart = ({ data }: RevenueChartProps) => {
     return result;
   }, [data, showMA7, showMA30, showMA90]);
 
-  const yAxisDomain = useMemo(() => {
-    if (data.length === 0) return [0, 100];
+  const { yAxisDomain, yAxisTicks } = useMemo(() => {
+    if (data.length === 0) return { yAxisDomain: [0, 100000], yAxisTicks: [0, 20000, 40000, 60000, 80000, 100000] };
     
     const allValues = data.flatMap(d => [d.revenue, d.costs]);
-    const sorted = [...allValues].sort((a, b) => a - b);
-    const p90Index = Math.floor(sorted.length * 0.9);
-    const p90 = sorted[p90Index];
+    const maxValue = Math.max(...allValues);
     
-    return [0, Math.ceil(p90 * 1.15)];
+    const ticks = [0, 20000, 40000, 60000, 80000, 100000];
+    
+    if (maxValue > 100000) {
+      const step = maxValue > 200000 ? 100000 : 50000;
+      let current = 100000 + step;
+      while (current < maxValue * 1.1) {
+        ticks.push(current);
+        current += step;
+      }
+    }
+    
+    const domain = [0, Math.max(100000, Math.ceil(maxValue * 1.1))];
+    
+    return { yAxisDomain: domain, yAxisTicks: ticks };
   }, [data]);
 
   const formatNumber = (value: number) => {
@@ -130,6 +141,7 @@ const RevenueChart = ({ data }: RevenueChartProps) => {
               stroke="hsl(215, 16%, 65%)" 
               fontSize={12}
               domain={yAxisDomain}
+              ticks={yAxisTicks}
               tickFormatter={formatAxisNumber}
             />
             <Tooltip content={<CustomTooltip />} />
