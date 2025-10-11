@@ -68,33 +68,36 @@ const ClientsBubbles = ({ clients, onClientUpdate }: Props) => {
         const sortedByRevenue = [...clients].sort((a, b) => b.total_revenue - a.total_revenue);
         const sortedByPurchases = [...clients].sort((a, b) => b.purchase_count - a.purchase_count);
         const totalClients = sortedByRevenue.length;
+        const maxRevenue = sortedByRevenue[0]?.total_revenue || 1;
+        const minRevenue = sortedByRevenue[sortedByRevenue.length - 1]?.total_revenue || 0;
         
         bubblesRef.current = clients.map((client) => {
-          const radius = Math.max(30, Math.min(80, 30 + client.total_revenue / 300));
+          const normalizedRevenue = (client.total_revenue - minRevenue) / (maxRevenue - minRevenue);
+          const radius = Math.max(40, Math.min(120, 40 + normalizedRevenue * 80));
           
-          let autoImportance = client.importance;
-          if (client.importance === 'medium') {
-            const revenueIndex = sortedByRevenue.findIndex(c => 
-              c.client_telegram === client.client_telegram && 
-              c.client_name === client.client_name
-            );
-            const purchaseIndex = sortedByPurchases.findIndex(c => 
-              c.client_telegram === client.client_telegram && 
-              c.client_name === client.client_name
-            );
-            
-            const revenuePercent = (revenueIndex / totalClients) * 100;
-            const purchasePercent = (purchaseIndex / totalClients) * 100;
-            const bestPercent = Math.min(revenuePercent, purchasePercent);
-            
-            if (bestPercent < 5 || client.purchase_count >= 20) autoImportance = 'critical';
-            else if (bestPercent < 15 || client.purchase_count >= 10) autoImportance = 'high';
-            else if (bestPercent < 50 || client.purchase_count >= 5) autoImportance = 'medium';
-            else autoImportance = 'low';
-          }
+          const revenueIndex = sortedByRevenue.findIndex(c => 
+            c.client_telegram === client.client_telegram && 
+            c.client_name === client.client_name
+          );
+          const purchaseIndex = sortedByPurchases.findIndex(c => 
+            c.client_telegram === client.client_telegram && 
+            c.client_name === client.client_name
+          );
+          
+          const revenuePercent = (revenueIndex / totalClients) * 100;
+          const purchasePercent = (purchaseIndex / totalClients) * 100;
+          const bestPercent = Math.min(revenuePercent, purchasePercent);
+          
+          let autoImportance: 'low' | 'medium' | 'high' | 'critical';
+          if (bestPercent < 5 || client.purchase_count >= 20) autoImportance = 'critical';
+          else if (bestPercent < 15 || client.purchase_count >= 10) autoImportance = 'high';
+          else if (bestPercent < 50 || client.purchase_count >= 5) autoImportance = 'medium';
+          else autoImportance = 'low';
+          
+          const finalImportance = client.importance !== 'medium' ? client.importance : autoImportance;
           
           return {
-            client: { ...client, importance: autoImportance },
+            client: { ...client, importance: finalImportance },
             x: Math.random() * (width - radius * 2) + radius,
             y: Math.random() * (height - radius * 2) + radius,
             vx: (Math.random() - 0.5) * 2,
