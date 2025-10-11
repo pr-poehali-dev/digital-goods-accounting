@@ -39,22 +39,20 @@ const RevenueChart = ({ data }: RevenueChartProps) => {
     if (data.length === 0) return [0, 100];
     
     const allValues = data.flatMap(d => [d.revenue, d.costs]);
-    const sorted = allValues.sort((a, b) => a - b);
-    const q1Index = Math.floor(sorted.length * 0.25);
-    const q3Index = Math.floor(sorted.length * 0.75);
-    const q1 = sorted[q1Index];
-    const q3 = sorted[q3Index];
-    const iqr = q3 - q1;
+    const sorted = [...allValues].sort((a, b) => a - b);
+    const p90Index = Math.floor(sorted.length * 0.9);
+    const p90 = sorted[p90Index];
     
-    const upperBound = q3 + 1.5 * iqr;
-    const maxNormal = Math.max(...allValues.filter(v => v <= upperBound));
-    
-    return [0, Math.ceil(maxNormal * 1.1)];
+    return [0, Math.ceil(p90 * 1.15)];
   }, [data]);
 
   const formatNumber = (value: number) => {
+    return value.toLocaleString('ru-RU');
+  };
+
+  const formatAxisNumber = (value: number) => {
     if (value >= 1000) {
-      return (value / 1000).toFixed(1) + 'k';
+      return (value / 1000).toFixed(0) + 'k';
     }
     return Math.round(value).toString();
   };
@@ -132,7 +130,7 @@ const RevenueChart = ({ data }: RevenueChartProps) => {
               stroke="hsl(215, 16%, 65%)" 
               fontSize={12}
               domain={yAxisDomain}
-              tickFormatter={formatNumber}
+              tickFormatter={formatAxisNumber}
             />
             <Tooltip content={<CustomTooltip />} />
             <Area type="monotone" dataKey="revenue" stroke="hsl(217, 91%, 60%)" strokeWidth={2} fill="url(#colorRevenue)" name="Доход" />
