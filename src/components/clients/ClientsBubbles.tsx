@@ -64,30 +64,16 @@ const ClientsBubbles = ({ clients, onClientUpdate }: Props) => {
       canvas.width = width;
       canvas.height = height;
 
-      const sortedByRevenue = [...clients].sort((a, b) => b.total_revenue - a.total_revenue);
-      const totalClients = sortedByRevenue.length;
-      const maxRevenue = sortedByRevenue[0]?.total_revenue || 1;
-      const minRevenue = sortedByRevenue[sortedByRevenue.length - 1]?.total_revenue || 0;
+      const allRevenues = clients.map(c => c.total_revenue).filter(r => r > 0);
+      const maxRevenue = Math.max(...allRevenues, 1);
+      const minRevenue = Math.min(...allRevenues, 0);
       
       bubblesRef.current = clients.map((client) => {
           const normalizedRevenue = (client.total_revenue - minRevenue) / (maxRevenue - minRevenue);
           const radius = Math.max(40, Math.min(120, 40 + normalizedRevenue * 80));
           
-          const revenueIndex = sortedByRevenue.findIndex(c => 
-            c.client_telegram === client.client_telegram && 
-            c.client_name === client.client_name
-          );
-          
-          const revenuePercent = (revenueIndex / totalClients) * 100;
-          
-          let autoImportance: 'low' | 'medium' | 'high' | 'critical';
-          if (revenuePercent < 5) autoImportance = 'critical';
-          else if (revenuePercent < 15) autoImportance = 'high';
-          else if (revenuePercent < 50) autoImportance = 'medium';
-          else autoImportance = 'low';
-          
           return {
-            client: { ...client, importance: autoImportance },
+            client: client,
             x: Math.random() * (width - radius * 2) + radius,
             y: Math.random() * (height - radius * 2) + radius,
             vx: (Math.random() - 0.5) * 2,
