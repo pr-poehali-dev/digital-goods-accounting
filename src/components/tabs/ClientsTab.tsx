@@ -23,7 +23,7 @@ const ClientsTab = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [importanceFilter, setImportanceFilter] = useState<string>('all');
-  const [sortBy, setSortBy] = useState<'revenue' | 'purchases' | 'recent'>('revenue');
+  const [sortBy, setSortBy] = useState<'revenue' | 'recent'>('revenue');
 
   useEffect(() => {
     loadClients();
@@ -43,25 +43,18 @@ const ClientsTab = () => {
 
   const calculateAutoImportance = (client: Client, allClients: Client[]): 'low' | 'medium' | 'high' | 'critical' => {
     const sortedByRevenue = [...allClients].sort((a, b) => b.total_revenue - a.total_revenue);
-    const sortedByPurchases = [...allClients].sort((a, b) => b.purchase_count - a.purchase_count);
     const totalClients = allClients.length;
     
     const revenueIndex = sortedByRevenue.findIndex(c => 
       c.client_telegram === client.client_telegram && 
       c.client_name === client.client_name
     );
-    const purchaseIndex = sortedByPurchases.findIndex(c => 
-      c.client_telegram === client.client_telegram && 
-      c.client_name === client.client_name
-    );
     
     const revenuePercent = (revenueIndex / totalClients) * 100;
-    const purchasePercent = (purchaseIndex / totalClients) * 100;
-    const bestPercent = Math.min(revenuePercent, purchasePercent);
     
-    if (bestPercent < 5 || client.purchase_count >= 20) return 'critical';
-    if (bestPercent < 15 || client.purchase_count >= 10) return 'high';
-    if (bestPercent < 50 || client.purchase_count >= 5) return 'medium';
+    if (revenuePercent < 5) return 'critical';
+    if (revenuePercent < 15) return 'high';
+    if (revenuePercent < 50) return 'medium';
     return 'low';
   };
 
@@ -98,7 +91,6 @@ const ClientsTab = () => {
     })
     .sort((a, b) => {
       if (sortBy === 'revenue') return b.total_revenue - a.total_revenue;
-      if (sortBy === 'purchases') return b.purchase_count - a.purchase_count;
       if (sortBy === 'recent') return new Date(b.last_purchase).getTime() - new Date(a.last_purchase).getTime();
       return 0;
     });
@@ -201,14 +193,7 @@ const ClientsTab = () => {
               <Icon name="TrendingUp" size={16} />
               По доходу
             </Button>
-            <Button
-              variant={sortBy === 'purchases' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setSortBy('purchases')}
-            >
-              <Icon name="ShoppingCart" size={16} />
-              По покупкам
-            </Button>
+
             <Button
               variant={sortBy === 'recent' ? 'default' : 'outline'}
               size="sm"
