@@ -35,26 +35,26 @@ const RevenueChart = ({ data }: RevenueChartProps) => {
     return result;
   }, [data, showMA7, showMA30, showMA90]);
 
-  const { yAxisDomain, yAxisTicks } = useMemo(() => {
-    if (data.length === 0) return { yAxisDomain: [0, 100000], yAxisTicks: [0, 20000, 40000, 60000, 80000, 100000] };
+  const yAxisTicks = useMemo(() => {
+    if (data.length === 0) return [0, 20000, 40000, 60000, 80000, 100000];
     
     const allValues = data.flatMap(d => [d.revenue, d.costs]);
     const maxValue = Math.max(...allValues);
     
-    const ticks = [0, 20000, 40000, 60000, 80000, 100000];
-    
-    if (maxValue > 100000) {
-      const step = maxValue > 200000 ? 100000 : 50000;
-      let current = 100000 + step;
-      while (current < maxValue * 1.1) {
-        ticks.push(current);
-        current += step;
-      }
+    if (maxValue <= 100000) {
+      return [0, 20000, 40000, 60000, 80000, 100000];
     }
     
-    const domain = [0, Math.max(100000, Math.ceil(maxValue * 1.1))];
+    const ticks = [0, 20000, 40000, 60000, 80000, 100000];
+    const step = 100000;
+    let current = 100000 + step;
     
-    return { yAxisDomain: domain, yAxisTicks: ticks };
+    while (current <= maxValue) {
+      ticks.push(current);
+      current += step;
+    }
+    
+    return ticks;
   }, [data]);
 
   const formatNumber = (value: number) => {
@@ -140,7 +140,6 @@ const RevenueChart = ({ data }: RevenueChartProps) => {
             <YAxis 
               stroke="hsl(215, 16%, 65%)" 
               fontSize={12}
-              domain={yAxisDomain}
               ticks={yAxisTicks}
               tickFormatter={formatAxisNumber}
             />
