@@ -187,7 +187,7 @@ const TransactionsTab = ({
                 />
               </div>
             </div>
-            <div className="flex gap-2 mt-4">
+            <div className="flex items-center justify-between mt-4">
               <Button 
                 variant="outline" 
                 size="sm"
@@ -195,9 +195,17 @@ const TransactionsTab = ({
               >
                 Сбросить фильтры
               </Button>
-              <span className="text-sm text-muted-foreground flex items-center">
-                Найдено: {filteredTransactions.length} из {transactions.length}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">
+                  Найдено: {filteredTransactions.length} из {transactions.length}
+                </span>
+                <Button 
+                  size="sm"
+                  onClick={() => setShowFilters(false)}
+                >
+                  Применить
+                </Button>
+              </div>
             </div>
           </CardContent>
         )}
