@@ -307,7 +307,7 @@ const ClientsBubbles = ({ clients, onClientUpdate }: Props) => {
                 </div>
                 <div>
                   <div className="text-sm text-muted-foreground">Средний чек</div>
-                  <div className="font-semibold text-lg">{selectedClient.avg_check.toLocaleString()} ₽</div>
+                  <div className="font-semibold text-lg">{selectedClient.avg_check.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₽</div>
                 </div>
                 <div>
                   <div className="text-sm text-muted-foreground">Последняя покупка</div>
