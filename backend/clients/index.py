@@ -44,7 +44,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         t.client_name,
                         SUM(t.amount) as total_revenue,
                         COUNT(*) as purchase_count,
-                        AVG(t.amount) as avg_check,
+                        SUM(t.amount) / NULLIF(COUNT(*), 0) as avg_check,
                         MIN(t.transaction_date) as first_purchase,
                         MAX(t.transaction_date) as last_purchase
                     FROM t_p6388661_digital_goods_accoun.transactions t
