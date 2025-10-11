@@ -22,6 +22,8 @@ const ClientsTab = () => {
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [importanceFilter, setImportanceFilter] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<'revenue' | 'purchases' | 'recent'>('revenue');
 
   useEffect(() => {
     loadClients();
@@ -58,10 +60,27 @@ const ClientsTab = () => {
     }
   };
 
-  const filteredClients = clients.filter(client => 
-    client.client_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    client.client_telegram?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredClients = clients
+    .filter(client => {
+      const matchesSearch = client.client_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        client.client_telegram?.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesImportance = importanceFilter === 'all' || client.importance === importanceFilter;
+      return matchesSearch && matchesImportance;
+    })
+    .sort((a, b) => {
+      if (sortBy === 'revenue') return b.total_revenue - a.total_revenue;
+      if (sortBy === 'purchases') return b.purchase_count - a.purchase_count;
+      if (sortBy === 'recent') return new Date(b.last_purchase).getTime() - new Date(a.last_purchase).getTime();
+      return 0;
+    });
+
+  const stats = {
+    total: clients.length,
+    critical: clients.filter(c => c.importance === 'critical').length,
+    high: clients.filter(c => c.importance === 'high').length,
+    medium: clients.filter(c => c.importance === 'medium').length,
+    low: clients.filter(c => c.importance === 'low').length,
+  };
 
   if (loading) {
     return (
@@ -76,23 +95,101 @@ const ClientsTab = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex-1 max-w-md">
-          <div className="relative">
-            <Icon name="Search" size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Поиск клиента..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex-1 max-w-md">
+            <div className="relative">
+              <Icon name="Search" size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Поиск клиента..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
           </div>
+
+          <Button onClick={loadClients} variant="outline">
+            <Icon name="RefreshCw" size={18} />
+            Обновить
+          </Button>
         </div>
 
-        <Button onClick={loadClients} variant="outline">
-          <Icon name="RefreshCw" size={18} />
-          Обновить
-        </Button>
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-2">
+            <Button
+              variant={importanceFilter === 'all' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setImportanceFilter('all')}
+            >
+              Все ({stats.total})
+            </Button>
+            <Button
+              variant={importanceFilter === 'critical' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setImportanceFilter('critical')}
+              className="gap-2"
+            >
+              <div className="w-3 h-3 rounded-full bg-red-500" />
+              Критичные ({stats.critical})
+            </Button>
+            <Button
+              variant={importanceFilter === 'high' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setImportanceFilter('high')}
+              className="gap-2"
+            >
+              <div className="w-3 h-3 rounded-full bg-orange-500" />
+              Высокая ({stats.high})
+            </Button>
+            <Button
+              variant={importanceFilter === 'medium' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setImportanceFilter('medium')}
+              className="gap-2"
+            >
+              <div className="w-3 h-3 rounded-full bg-blue-500" />
+              Средняя ({stats.medium})
+            </Button>
+            <Button
+              variant={importanceFilter === 'low' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setImportanceFilter('low')}
+              className="gap-2"
+            >
+              <div className="w-3 h-3 rounded-full bg-gray-400" />
+              Низкая ({stats.low})
+            </Button>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">Сортировка:</span>
+            <Button
+              variant={sortBy === 'revenue' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setSortBy('revenue')}
+            >
+              <Icon name="TrendingUp" size={16} />
+              По доходу
+            </Button>
+            <Button
+              variant={sortBy === 'purchases' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setSortBy('purchases')}
+            >
+              <Icon name="ShoppingCart" size={16} />
+              По покупкам
+            </Button>
+            <Button
+              variant={sortBy === 'recent' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setSortBy('recent')}
+            >
+              <Icon name="Clock" size={16} />
+              По дате
+            </Button>
+          </div>
+        </div>
       </div>
 
       <ClientsBubbles clients={filteredClients} onClientUpdate={updateClient} />
