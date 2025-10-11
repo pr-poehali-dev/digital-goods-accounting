@@ -49,22 +49,20 @@ const RevenueChart = ({ data }: RevenueChartProps) => {
         ...item,
         displayRevenue: Math.min(item.revenue, threshold),
         displayCosts: item.costs,
+        displayProfit: Math.min(item.revenue, threshold) - item.costs,
         hasAnomaly
       };
     });
 
     let result = normalized;
     if (showMA7) {
-      result = calculateMA(result, 7, 'displayRevenue');
-      result = calculateMA(result, 7, 'displayCosts');
+      result = calculateMA(result, 7, 'displayProfit');
     }
     if (showMA30) {
-      result = calculateMA(result, 30, 'displayRevenue');
-      result = calculateMA(result, 30, 'displayCosts');
+      result = calculateMA(result, 30, 'displayProfit');
     }
     if (showMA90) {
-      result = calculateMA(result, 90, 'displayRevenue');
-      result = calculateMA(result, 90, 'displayCosts');
+      result = calculateMA(result, 90, 'displayProfit');
     }
 
     return { chartData: result, normalizedData: normalized, anomalies: anomalyList };
@@ -174,24 +172,9 @@ const RevenueChart = ({ data }: RevenueChartProps) => {
             <Tooltip content={<CustomTooltip />} />
             <Area type="monotone" dataKey="displayRevenue" stroke="hsl(217, 91%, 60%)" strokeWidth={2} fill="url(#colorRevenue)" name="Доход" />
             <Area type="monotone" dataKey="displayCosts" stroke="hsl(0, 91%, 59%)" strokeWidth={2} fill="url(#colorCosts)" name="Затраты" />
-            {showMA7 && (
-              <>
-                <Line type="monotone" dataKey="ma7_displayRevenue" stroke="hsl(142, 76%, 36%)" strokeWidth={2} dot={false} name="MA7 Доход" />
-                <Line type="monotone" dataKey="ma7_displayCosts" stroke="hsl(142, 76%, 36%)" strokeWidth={2} strokeDasharray="5 5" dot={false} name="MA7 Затраты" />
-              </>
-            )}
-            {showMA30 && (
-              <>
-                <Line type="monotone" dataKey="ma30_displayRevenue" stroke="hsl(262, 83%, 58%)" strokeWidth={2} dot={false} name="MA30 Доход" />
-                <Line type="monotone" dataKey="ma30_displayCosts" stroke="hsl(262, 83%, 58%)" strokeWidth={2} strokeDasharray="5 5" dot={false} name="MA30 Затраты" />
-              </>
-            )}
-            {showMA90 && (
-              <>
-                <Line type="monotone" dataKey="ma90_displayRevenue" stroke="hsl(24, 95%, 53%)" strokeWidth={2} dot={false} name="MA90 Доход" />
-                <Line type="monotone" dataKey="ma90_displayCosts" stroke="hsl(24, 95%, 53%)" strokeWidth={2} strokeDasharray="5 5" dot={false} name="MA90 Затраты" />
-              </>
-            )}
+            {showMA7 && <Line type="monotone" dataKey="ma7_displayProfit" stroke="hsl(142, 76%, 36%)" strokeWidth={2} dot={false} name="MA7 Прибыль" />}
+            {showMA30 && <Line type="monotone" dataKey="ma30_displayProfit" stroke="hsl(262, 83%, 58%)" strokeWidth={2} dot={false} name="MA30 Прибыль" />}
+            {showMA90 && <Line type="monotone" dataKey="ma90_displayProfit" stroke="hsl(24, 95%, 53%)" strokeWidth={2} dot={false} name="MA90 Прибыль" />}
             {anomalies.map((anomaly, idx) => (
               <ReferenceDot 
                 key={idx}
