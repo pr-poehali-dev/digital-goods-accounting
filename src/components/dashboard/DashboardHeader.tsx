@@ -24,12 +24,12 @@ const DashboardHeader = ({
       <div className="container mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
-              <Icon name="Package" size={20} className="text-white" />
+            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
+              <Icon name="BarChart3" size={20} className="text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-semibold text-foreground">Админ-панель</h1>
-              <p className="text-sm text-muted-foreground">Магазин цифровых товаров</p>
+              <h1 className="text-xl font-semibold text-foreground">Hey, Data!</h1>
+              <p className="text-sm text-muted-foreground">Аналитика товарных позиций</p>
             </div>
           </div>
           <div className="flex gap-2">
