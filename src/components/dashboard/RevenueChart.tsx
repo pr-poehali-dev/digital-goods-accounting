@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
-import { AreaChart, Area, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer, Line, ComposedChart } from 'recharts';
+import { AreaChart, Area, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer, Line, ComposedChart, ReferenceDot, Label } from 'recharts';
 import { useState, useMemo } from 'react';
 
 interface RevenueChartProps {
@@ -27,35 +27,44 @@ const RevenueChart = ({ data }: RevenueChartProps) => {
     });
   };
 
-  const chartData = useMemo(() => {
-    let result = [...data];
-    if (showMA7) result = calculateMA(result, 7, 'revenue');
-    if (showMA30) result = calculateMA(result, 30, 'revenue');
-    if (showMA90) result = calculateMA(result, 90, 'revenue');
-    return result;
-  }, [data, showMA7, showMA30, showMA90]);
+  const { chartData, normalizedData, anomalies, yMax } = useMemo(() => {
+    if (data.length === 0) return { chartData: [], normalizedData: [], anomalies: [], yMax: 100000 };
 
-  const yAxisTicks = useMemo(() => {
-    if (data.length === 0) return [0, 20000, 40000, 60000, 80000, 100000];
-    
     const allValues = data.flatMap(d => [d.revenue, d.costs]);
-    const maxValue = Math.max(...allValues);
+    const sorted = [...allValues].sort((a, b) => a - b);
+    const p90Index = Math.floor(sorted.length * 0.9);
+    const threshold = sorted[p90Index];
+    const yMaxValue = Math.ceil(threshold * 1.2);
+
+    const anomalyList: Array<{ date: string; revenue: number; costs: number; index: number }> = [];
     
-    if (maxValue <= 100000) {
-      return [0, 20000, 40000, 60000, 80000, 100000];
-    }
-    
-    const ticks = [0, 20000, 40000, 60000, 80000, 100000];
-    const step = 100000;
-    let current = 100000 + step;
-    
-    while (current <= maxValue) {
-      ticks.push(current);
-      current += step;
-    }
-    
-    return ticks;
-  }, [data]);
+    const normalized = data.map((item, idx) => {
+      const hasAnomaly = item.revenue > threshold || item.costs > threshold;
+      
+      if (hasAnomaly) {
+        anomalyList.push({
+          date: item.date,
+          revenue: item.revenue,
+          costs: item.costs,
+          index: idx
+        });
+      }
+
+      return {
+        ...item,
+        displayRevenue: Math.min(item.revenue, yMaxValue),
+        displayCosts: Math.min(item.costs, yMaxValue),
+        hasAnomaly
+      };
+    });
+
+    let result = normalized;
+    if (showMA7) result = calculateMA(result, 7, 'displayRevenue');
+    if (showMA30) result = calculateMA(result, 30, 'displayRevenue');
+    if (showMA90) result = calculateMA(result, 90, 'displayRevenue');
+
+    return { chartData: result, normalizedData: normalized, anomalies: anomalyList, yMax: yMaxValue };
+  }, [data, showMA7, showMA30, showMA90]);
 
   const formatNumber = (value: number) => {
     return value.toLocaleString('ru-RU');
@@ -69,16 +78,30 @@ const RevenueChart = ({ data }: RevenueChartProps) => {
   };
 
   const CustomTooltip = ({ active, payload, label }: any) => {
-    if (!active || !payload) return null;
+    if (!active || !payload || !payload.length) return null;
+
+    const dataPoint = normalizedData.find(d => d.date === label);
+    if (!dataPoint) return null;
 
     return (
       <div className="bg-white border border-gray-200 rounded-lg p-3 shadow-lg">
         <p className="font-medium text-sm mb-2">{label}</p>
-        {payload.map((entry: any, index: number) => (
-          <p key={index} style={{ color: entry.color }} className="text-sm">
-            {entry.name} : {formatNumber(entry.value)}
-          </p>
-        ))}
+        <p className="text-sm" style={{ color: 'hsl(217, 91%, 60%)' }}>
+          Доход: {formatNumber(dataPoint.revenue)}
+          {dataPoint.hasAnomaly && <span className="ml-1 text-orange-500">⚠️</span>}
+        </p>
+        <p className="text-sm" style={{ color: 'hsl(0, 91%, 59%)' }}>
+          Затраты: {formatNumber(dataPoint.costs)}
+        </p>
+        {payload.find((p: any) => p.dataKey?.includes('ma')) && (
+          <>
+            {payload.filter((p: any) => p.dataKey?.includes('ma')).map((entry: any, index: number) => (
+              <p key={index} style={{ color: entry.color }} className="text-sm">
+                {entry.name}: {formatNumber(entry.value)}
+              </p>
+            ))}
+          </>
+        )}
       </div>
     );
   };
@@ -140,17 +163,42 @@ const RevenueChart = ({ data }: RevenueChartProps) => {
             <YAxis 
               stroke="hsl(215, 16%, 65%)" 
               fontSize={12}
-              ticks={yAxisTicks}
+              domain={[0, yMax]}
               tickFormatter={formatAxisNumber}
             />
             <Tooltip content={<CustomTooltip />} />
-            <Area type="monotone" dataKey="revenue" stroke="hsl(217, 91%, 60%)" strokeWidth={2} fill="url(#colorRevenue)" name="Доход" />
-            <Area type="monotone" dataKey="costs" stroke="hsl(0, 91%, 59%)" strokeWidth={2} fill="url(#colorCosts)" name="Затраты" />
-            {showMA7 && <Line type="monotone" dataKey="ma7_revenue" stroke="hsl(142, 76%, 36%)" strokeWidth={2} dot={false} name="MA7" />}
-            {showMA30 && <Line type="monotone" dataKey="ma30_revenue" stroke="hsl(262, 83%, 58%)" strokeWidth={2} dot={false} name="MA30" />}
-            {showMA90 && <Line type="monotone" dataKey="ma90_revenue" stroke="hsl(24, 95%, 53%)" strokeWidth={2} dot={false} name="MA90" />}
+            <Area type="monotone" dataKey="displayRevenue" stroke="hsl(217, 91%, 60%)" strokeWidth={2} fill="url(#colorRevenue)" name="Доход" />
+            <Area type="monotone" dataKey="displayCosts" stroke="hsl(0, 91%, 59%)" strokeWidth={2} fill="url(#colorCosts)" name="Затраты" />
+            {showMA7 && <Line type="monotone" dataKey="ma7_displayRevenue" stroke="hsl(142, 76%, 36%)" strokeWidth={2} dot={false} name="MA7" />}
+            {showMA30 && <Line type="monotone" dataKey="ma30_displayRevenue" stroke="hsl(262, 83%, 58%)" strokeWidth={2} dot={false} name="MA30" />}
+            {showMA90 && <Line type="monotone" dataKey="ma90_displayRevenue" stroke="hsl(24, 95%, 53%)" strokeWidth={2} dot={false} name="MA90" />}
+            {anomalies.map((anomaly, idx) => (
+              <ReferenceDot 
+                key={idx}
+                x={anomaly.date} 
+                y={yMax}
+                r={6}
+                fill="hsl(24, 95%, 53%)"
+                stroke="white"
+                strokeWidth={2}
+              >
+                <Label 
+                  value={`⚠️ ${formatNumber(anomaly.revenue)}`}
+                  position="top"
+                  fill="hsl(24, 95%, 53%)"
+                  fontSize={11}
+                  fontWeight="bold"
+                />
+              </ReferenceDot>
+            ))}
           </ComposedChart>
         </ResponsiveContainer>
+        {anomalies.length > 0 && (
+          <div className="mt-3 text-xs text-muted-foreground flex items-center gap-1">
+            <Icon name="AlertTriangle" size={14} className="text-orange-500" />
+            <span>Обнаружено аномалий: {anomalies.length}. Значения отмечены на графике.</span>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
