@@ -65,17 +65,23 @@ const ClientsBubbles = ({ clients, onClientUpdate }: Props) => {
       canvas.height = height;
 
       if (bubblesRef.current.length === 0) {
-        const maxRevenue = Math.max(...clients.map(c => c.total_revenue), 1);
+        const sortedByRevenue = [...clients].sort((a, b) => b.total_revenue - a.total_revenue);
+        const totalClients = sortedByRevenue.length;
         
         bubblesRef.current = clients.map((client) => {
           const radius = Math.max(30, Math.min(80, 30 + client.total_revenue / 300));
           
           let autoImportance = client.importance;
           if (client.importance === 'medium') {
-            const revenuePercent = client.total_revenue / maxRevenue;
-            if (revenuePercent > 0.7) autoImportance = 'critical';
-            else if (revenuePercent > 0.4) autoImportance = 'high';
-            else if (revenuePercent > 0.15) autoImportance = 'medium';
+            const clientIndex = sortedByRevenue.findIndex(c => 
+              c.client_telegram === client.client_telegram && 
+              c.client_name === client.client_name
+            );
+            const topPercent = (clientIndex / totalClients) * 100;
+            
+            if (topPercent < 5) autoImportance = 'critical';
+            else if (topPercent < 15) autoImportance = 'high';
+            else if (topPercent < 50) autoImportance = 'medium';
             else autoImportance = 'low';
           }
           
