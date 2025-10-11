@@ -1,24 +1,18 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Icon from '@/components/ui/icon';
 import ProductManager from '@/components/ProductManager';
 import TransactionForm from '@/components/TransactionForm';
 import ExpenseManager from '@/components/ExpenseManager';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
-import DateFilter from '@/components/dashboard/DateFilter';
-import StatsCards from '@/components/dashboard/StatsCards';
-import RevenueChart from '@/components/dashboard/RevenueChart';
-import AverageMetrics from '@/components/dashboard/AverageMetrics';
-import TransactionsTable from '@/components/dashboard/TransactionsTable';
-import AnalyticsMetrics from '@/components/dashboard/AnalyticsMetrics';
-import ProductSalesChart from '@/components/dashboard/ProductSalesChart';
-import SalesDynamicsChart from '@/components/dashboard/SalesDynamicsChart';
-import ProfitDynamicsChart from '@/components/dashboard/ProfitDynamicsChart';
-import { getStats, getTransactions, getExchangeRate, deleteTransaction } from '@/lib/api';
+import OverviewTab from '@/components/tabs/OverviewTab';
+import TransactionsTab from '@/components/tabs/TransactionsTab';
+import AnalyticsTab from '@/components/tabs/AnalyticsTab';
+import { useDashboardData } from '@/hooks/useDashboardData';
+import { useCurrencyConversion } from '@/hooks/useCurrencyConversion';
+import { useDashboardMetrics } from '@/hooks/useDashboardMetrics';
+import { deleteTransaction } from '@/lib/api';
 import { toast } from 'sonner';
 
 interface Transaction {
@@ -42,6 +36,21 @@ const Index = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [displayCurrency, setDisplayCurrency] = useState<'RUB' | 'USD'>('RUB');
+  const [exchangeRate, setExchangeRate] = useState(82);
+  const [dateFilter, setDateFilter] = useState<'today' | 'week' | 'month' | 'quarter' | 'year' | 'all' | 'custom'>('all');
+  const [customDateRange, setCustomDateRange] = useState({ start: '', end: '' });
+  const [analyticsGrouping, setAnalyticsGrouping] = useState<'day' | 'week' | 'month' | 'quarter' | 'year'>('month');
+  const [transactionFormOpen, setTransactionFormOpen] = useState(false);
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+  const [transactionFilters, setTransactionFilters] = useState({
+    status: 'all',
+    product: 'all',
+    dateFrom: '',
+    dateTo: '',
+    searchText: ''
+  });
+  const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('auth_token');
@@ -55,9 +64,7 @@ const Index = () => {
     setCurrentUser(JSON.parse(user));
     setIsAuthenticated(true);
   }, [navigate]);
-  const [displayCurrency, setDisplayCurrency] = useState<'RUB' | 'USD'>('RUB');
-  const [exchangeRate, setExchangeRate] = useState(82);
-  
+
   useEffect(() => {
     const fetchRate = async () => {
       try {
@@ -72,77 +79,26 @@ const Index = () => {
     };
     fetchRate();
   }, []);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [dateFilter, setDateFilter] = useState<'today' | 'week' | 'month' | 'quarter' | 'year' | 'all' | 'custom'>('all');
-  const [customDateRange, setCustomDateRange] = useState({ start: '', end: '' });
-  const [analyticsGrouping, setAnalyticsGrouping] = useState<'day' | 'week' | 'month' | 'quarter' | 'year'>('month');
-  const [stats, setStats] = useState({
-    total_revenue: 0,
-    total_costs: 0,
-    total_profit: 0,
-    total_transactions: 0,
-    completed_count: 0,
-    pending_count: 0,
-    expenses_count: 0,
-    product_analytics: [],
-    daily_analytics: [],
-  });
-  const [transactionFormOpen, setTransactionFormOpen] = useState(false);
-  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
-  const [transactionFilters, setTransactionFilters] = useState({
-    status: 'all',
-    product: 'all',
-    dateFrom: '',
-    dateTo: '',
-    searchText: ''
-  });
-  const [showFilters, setShowFilters] = useState(false);
 
-  const loadData = useCallback(async () => {
-    try {
-      const startDate = dateFilter === 'custom' ? customDateRange.start : undefined;
-      const endDate = dateFilter === 'custom' ? customDateRange.end : undefined;
-      
-      const [statsResult, transactionsResult] = await Promise.all([
-        getStats(dateFilter, startDate, endDate, exchangeRate),
-        getTransactions(),
-      ]);
-      
-      setStats(prevStats => {
-        if (JSON.stringify(prevStats) === JSON.stringify(statsResult)) {
-          return prevStats;
-        }
-        return statsResult;
-      });
-      
-      setTransactions(prevTrans => {
-        const newTrans = transactionsResult.transactions || [];
-        if (JSON.stringify(prevTrans) === JSON.stringify(newTrans)) {
-          return prevTrans;
-        }
-        return newTrans;
-      });
-    } catch (error) {
-      toast.error('Ошибка загрузки данных');
-    }
-  }, [dateFilter, customDateRange]);
+  const { transactions, stats, loadData } = useDashboardData(
+    dateFilter,
+    customDateRange,
+    exchangeRate,
+    isAuthenticated
+  );
 
-  useEffect(() => {
-    if (!isAuthenticated) return;
-    
-    let mounted = true;
-    
-    const fetchData = async () => {
-      if (!mounted) return;
-      await loadData();
-    };
-    
-    fetchData();
-    
-    return () => {
-      mounted = false;
-    };
-  }, [isAuthenticated, loadData]);
+  const { convertedStats, formatCurrency } = useCurrencyConversion(
+    displayCurrency,
+    exchangeRate,
+    stats
+  );
+
+  const { dailyChartData, actualTotalCosts, averageMetrics, groupDataByPeriod } = useDashboardMetrics(convertedStats);
+
+  const analyticsChartData = useMemo(() => {
+    if (!convertedStats.daily_analytics) return [];
+    return groupDataByPeriod(convertedStats.daily_analytics, analyticsGrouping);
+  }, [convertedStats.daily_analytics, analyticsGrouping, groupDataByPeriod]);
 
   const handleLogout = () => {
     localStorage.removeItem('auth_token');
@@ -165,207 +121,6 @@ const Index = () => {
   const handleEditTransaction = (transaction: Transaction) => {
     setEditingTransaction(transaction);
     setTransactionFormOpen(true);
-  };
-
-  const convertAmount = useCallback((amount: number, fromCurrency: string = 'RUB') => {
-    if (displayCurrency === fromCurrency) return amount;
-    if (displayCurrency === 'USD' && fromCurrency === 'RUB') return amount / exchangeRate;
-    if (displayCurrency === 'RUB' && fromCurrency === 'USD') return amount * exchangeRate;
-    return amount;
-  }, [displayCurrency, exchangeRate]);
-
-  const formatCurrency = useCallback((amount: number) => {
-    const symbol = displayCurrency === 'RUB' ? '₽' : '$';
-    const formatted = displayCurrency === 'RUB' 
-      ? amount.toLocaleString('ru-RU', { maximumFractionDigits: 0 })
-      : amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    return `${formatted} ${symbol}`;
-  }, [displayCurrency]);
-
-  const convertedStats = useMemo(() => ({
-    total_revenue: convertAmount(stats.total_revenue || 0, 'RUB'),
-    total_costs: convertAmount(stats.total_costs || 0, 'RUB'),
-    total_profit: convertAmount(stats.total_profit || 0, 'RUB'),
-    total_transactions: stats.total_transactions || 0,
-    completed_count: stats.completed_count || 0,
-    pending_count: stats.pending_count || 0,
-    expenses_count: stats.expenses_count || 0,
-    product_analytics: (stats.product_analytics || []).map((p: any) => ({
-      ...p,
-      total_revenue: convertAmount(p.total_revenue || 0, 'RUB'),
-      total_profit: convertAmount(p.total_profit || 0, 'RUB'),
-    })),
-    daily_analytics: (stats.daily_analytics || []).map((d: any) => ({
-      ...d,
-      revenue: convertAmount(d.revenue || 0, 'RUB'),
-      profit: convertAmount(d.profit || 0, 'RUB'),
-      expenses: convertAmount(d.expenses || 0, 'RUB'),
-      net_profit: convertAmount(d.net_profit || 0, 'RUB'),
-    })),
-  }), [stats, convertAmount]);
-
-  const dailyChartData = useMemo(() => {
-    if (!convertedStats.daily_analytics || convertedStats.daily_analytics.length === 0) return [];
-    
-    return convertedStats.daily_analytics.map((day: any) => {
-      const dayRevenue = day.revenue || 0;
-      const dayProfit = day.profit || 0;
-      const transactionCosts = dayRevenue - dayProfit;
-      const dayExpenses = day.expenses || 0;
-      const dayCosts = transactionCosts + dayExpenses;
-      
-      return {
-        date: new Date(day.date).toLocaleDateString('ru', { day: 'numeric', month: 'short' }),
-        revenue: Math.round(dayRevenue),
-        costs: Math.round(dayCosts),
-        profit: Math.round(dayProfit),
-      };
-    });
-  }, [convertedStats]);
-
-  const actualTotalCosts = useMemo(() => {
-    if (!convertedStats.daily_analytics || convertedStats.daily_analytics.length === 0) return 0;
-    
-    return convertedStats.daily_analytics.reduce((total: number, day: any) => {
-      const dayRevenue = day.revenue || 0;
-      const dayProfit = day.profit || 0;
-      const transactionCosts = dayRevenue - dayProfit;
-      const dayExpenses = day.expenses || 0;
-      return total + transactionCosts + dayExpenses;
-    }, 0);
-  }, [convertedStats]);
-
-  const averageMetrics = useMemo(() => {
-    if (!convertedStats.daily_analytics || convertedStats.daily_analytics.length === 0) {
-      return { avgSalesPerDay: 0, avgProfitPerDay: 0, avgCheck: 0, avgMargin: 0 };
-    }
-
-    const days = convertedStats.daily_analytics.length;
-    const totalCount = convertedStats.daily_analytics.reduce((sum: number, d: any) => sum + (d.count || 0), 0);
-    const totalProfit = convertedStats.daily_analytics.reduce((sum: number, d: any) => sum + (d.profit || 0), 0);
-    const totalRevenue = convertedStats.daily_analytics.reduce((sum: number, d: any) => sum + (d.revenue || 0), 0);
-    const totalCosts = totalRevenue - totalProfit;
-
-    return {
-      avgSalesPerDay: totalCount / days,
-      avgProfitPerDay: totalProfit / days,
-      avgCheck: totalCount > 0 ? totalRevenue / totalCount : 0,
-      avgMargin: totalCosts > 0 ? totalRevenue / totalCosts : 0
-    };
-  }, [convertedStats]);
-
-  const groupDataByPeriod = useCallback((data: any[], grouping: 'day' | 'week' | 'month' | 'quarter' | 'year') => {
-    if (!data || data.length === 0) return [];
-    
-    const grouped = data.reduce((acc: any, item: any) => {
-      const date = new Date(item.date);
-      let key = '';
-      
-      switch (grouping) {
-        case 'day':
-          key = date.toLocaleDateString('ru', { day: 'numeric', month: 'short' });
-          break;
-        case 'week':
-          const weekStart = new Date(date);
-          weekStart.setDate(date.getDate() - date.getDay() + 1);
-          key = `Нед ${weekStart.toLocaleDateString('ru', { day: 'numeric', month: 'short' })}`;
-          break;
-        case 'month':
-          key = date.toLocaleDateString('ru', { month: 'short', year: 'numeric' });
-          break;
-        case 'quarter':
-          const quarter = Math.floor(date.getMonth() / 3) + 1;
-          key = `Q${quarter} ${date.getFullYear()}`;
-          break;
-        case 'year':
-          key = date.getFullYear().toString();
-          break;
-      }
-      
-      if (!acc[key]) {
-        acc[key] = { period: key, revenue: 0, profit: 0, costs: 0, count: 0, expenses: 0, net_profit: 0 };
-      }
-      
-      acc[key].revenue += item.revenue || 0;
-      acc[key].profit += item.profit || 0;
-      acc[key].costs += (item.revenue || 0) - (item.profit || 0);
-      acc[key].count += item.count || 0;
-      acc[key].expenses += item.expenses || 0;
-      acc[key].net_profit += item.net_profit || 0;
-      
-      return acc;
-    }, {});
-    
-    return Object.values(grouped);
-  }, []);
-
-  const analyticsChartData = useMemo(() => {
-    if (!convertedStats.daily_analytics) return [];
-    return groupDataByPeriod(convertedStats.daily_analytics, analyticsGrouping);
-  }, [convertedStats.daily_analytics, analyticsGrouping, groupDataByPeriod]);
-
-  const filteredTransactions = useMemo(() => {
-    return transactions.filter(t => {
-      if (transactionFilters.status !== 'all' && t.status !== transactionFilters.status) return false;
-      if (transactionFilters.product !== 'all' && t.product_id.toString() !== transactionFilters.product) return false;
-      
-      if (transactionFilters.dateFrom) {
-        const transDate = new Date(t.transaction_date);
-        const filterDate = new Date(transactionFilters.dateFrom);
-        if (transDate < filterDate) return false;
-      }
-      
-      if (transactionFilters.dateTo) {
-        const transDate = new Date(t.transaction_date);
-        const filterDate = new Date(transactionFilters.dateTo);
-        if (transDate > filterDate) return false;
-      }
-      
-      if (transactionFilters.searchText) {
-        const searchLower = transactionFilters.searchText.toLowerCase();
-        const matchesSearch = 
-          t.transaction_code.toLowerCase().includes(searchLower) ||
-          t.product_name.toLowerCase().includes(searchLower) ||
-          t.client_telegram?.toLowerCase().includes(searchLower) ||
-          t.client_name?.toLowerCase().includes(searchLower);
-        if (!matchesSearch) return false;
-      }
-      
-      return true;
-    });
-  }, [transactions, transactionFilters]);
-
-  const uniqueProducts = useMemo(() => {
-    const products = new Map<number, string>();
-    transactions.forEach(t => {
-      if (!products.has(t.product_id)) {
-        products.set(t.product_id, t.product_name);
-      }
-    });
-    return Array.from(products.entries()).map(([id, name]) => ({ id, name }));
-  }, [transactions]);
-
-  const exportTransactions = () => {
-    const csv = [
-      ['ID', 'Дата', 'Клиент', 'Товар', 'Сумма', 'Валюта', 'Прибыль', 'Статус'].join(';'),
-      ...filteredTransactions.map(t => [
-        t.transaction_code,
-        t.transaction_date,
-        t.client_telegram || t.client_name,
-        t.product_name,
-        t.amount,
-        t.currency,
-        t.profit,
-        t.status
-      ].join(';'))
-    ].join('\n');
-    
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `transactions_${new Date().toISOString().split('T')[0]}.csv`;
-    link.click();
-    toast.success('Экспорт завершён');
   };
 
   if (!isAuthenticated) {
@@ -407,142 +162,48 @@ const Index = () => {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="overview" className="space-y-6">
-            <DateFilter
+          <TabsContent value="overview">
+            <OverviewTab
               dateFilter={dateFilter}
               customDateRange={customDateRange}
               onDateFilterChange={setDateFilter}
               onCustomDateChange={setCustomDateRange}
+              convertedStats={convertedStats}
+              actualTotalCosts={actualTotalCosts}
+              formatCurrency={formatCurrency}
+              averageMetrics={averageMetrics}
+              dailyChartData={dailyChartData}
             />
-
-            <StatsCards stats={{...convertedStats, total_costs: actualTotalCosts}} formatCurrency={formatCurrency} />
-
-            <AverageMetrics data={averageMetrics} formatCurrency={formatCurrency} />
-
-            <RevenueChart data={dailyChartData} />
           </TabsContent>
 
-          <TabsContent value="transactions" className="space-y-6">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Все транзакции</CardTitle>
-                <div className="flex gap-2">
-                  <Button 
-                    variant={showFilters ? "default" : "outline"} 
-                    size="sm"
-                    onClick={() => setShowFilters(!showFilters)}
-                  >
-                    <Icon name="Filter" size={16} className="mr-2" />
-                    Фильтры
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={exportTransactions}>
-                    <Icon name="Download" size={16} className="mr-2" />
-                    Экспорт
-                  </Button>
-                </div>
-              </CardHeader>
-              {showFilters && (
-                <CardContent className="border-t pt-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Статус</label>
-                      <Select value={transactionFilters.status} onValueChange={(v) => setTransactionFilters(prev => ({ ...prev, status: v }))}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">Все</SelectItem>
-                          <SelectItem value="completed">Завершена</SelectItem>
-                          <SelectItem value="pending">Ожидает</SelectItem>
-                          <SelectItem value="failed">Отклонена</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Товар</label>
-                      <Select value={transactionFilters.product} onValueChange={(v) => setTransactionFilters(prev => ({ ...prev, product: v }))}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">Все товары</SelectItem>
-                          {uniqueProducts.map(p => (
-                            <SelectItem key={p.id} value={p.id.toString()}>{p.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Дата с</label>
-                      <input 
-                        type="date" 
-                        className="w-full px-3 py-2 border rounded-md"
-                        value={transactionFilters.dateFrom}
-                        onChange={(e) => setTransactionFilters(prev => ({ ...prev, dateFrom: e.target.value }))}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Дата по</label>
-                      <input 
-                        type="date" 
-                        className="w-full px-3 py-2 border rounded-md"
-                        value={transactionFilters.dateTo}
-                        onChange={(e) => setTransactionFilters(prev => ({ ...prev, dateTo: e.target.value }))}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Поиск</label>
-                      <input 
-                        type="text" 
-                        placeholder="ID, клиент, товар..."
-                        className="w-full px-3 py-2 border rounded-md"
-                        value={transactionFilters.searchText}
-                        onChange={(e) => setTransactionFilters(prev => ({ ...prev, searchText: e.target.value }))}
-                      />
-                    </div>
-                  </div>
-                  <div className="flex gap-2 mt-4">
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => setTransactionFilters({ status: 'all', product: 'all', dateFrom: '', dateTo: '', searchText: '' })}
-                    >
-                      Сбросить фильтры
-                    </Button>
-                    <span className="text-sm text-muted-foreground flex items-center">
-                      Найдено: {filteredTransactions.length} из {transactions.length}
-                    </span>
-                  </div>
-                </CardContent>
-              )}
-            </Card>
-            <TransactionsTable transactions={filteredTransactions} showProfit title="Все транзакции" enablePagination onDelete={handleDeleteTransaction} onEdit={handleEditTransaction} />
+          <TabsContent value="transactions">
+            <TransactionsTab
+              transactions={transactions}
+              transactionFilters={transactionFilters}
+              showFilters={showFilters}
+              setShowFilters={setShowFilters}
+              setTransactionFilters={setTransactionFilters}
+              onDelete={handleDeleteTransaction}
+              onEdit={handleEditTransaction}
+            />
           </TabsContent>
 
           <TabsContent value="products">
             <ProductManager />
           </TabsContent>
 
-          <TabsContent value="analytics" className="space-y-6">
-            <DateFilter
+          <TabsContent value="analytics">
+            <AnalyticsTab
               dateFilter={dateFilter}
               customDateRange={customDateRange}
               onDateFilterChange={setDateFilter}
               onCustomDateChange={setCustomDateRange}
+              convertedStats={convertedStats}
+              displayCurrency={displayCurrency}
+              analyticsChartData={analyticsChartData}
+              analyticsGrouping={analyticsGrouping}
+              onGroupingChange={setAnalyticsGrouping}
             />
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <ProductSalesChart 
-                data={convertedStats.product_analytics} 
-                displayCurrency={displayCurrency}
-                useNetProfit={true}
-              />
-              <ProfitDynamicsChart
-                data={analyticsChartData}
-                grouping={analyticsGrouping}
-                onGroupingChange={setAnalyticsGrouping}
-              />
-            </div>
           </TabsContent>
 
           <TabsContent value="expenses">
