@@ -35,6 +35,45 @@ const RevenueChart = ({ data }: RevenueChartProps) => {
     return result;
   }, [data, showMA7, showMA30, showMA90]);
 
+  const yAxisDomain = useMemo(() => {
+    if (data.length === 0) return [0, 100];
+    
+    const allValues = data.flatMap(d => [d.revenue, d.costs]);
+    const sorted = allValues.sort((a, b) => a - b);
+    const q1Index = Math.floor(sorted.length * 0.25);
+    const q3Index = Math.floor(sorted.length * 0.75);
+    const q1 = sorted[q1Index];
+    const q3 = sorted[q3Index];
+    const iqr = q3 - q1;
+    
+    const upperBound = q3 + 1.5 * iqr;
+    const maxNormal = Math.max(...allValues.filter(v => v <= upperBound));
+    
+    return [0, Math.ceil(maxNormal * 1.1)];
+  }, [data]);
+
+  const formatNumber = (value: number) => {
+    if (value >= 1000) {
+      return (value / 1000).toFixed(1) + 'k';
+    }
+    return Math.round(value).toString();
+  };
+
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (!active || !payload) return null;
+
+    return (
+      <div className="bg-white border border-gray-200 rounded-lg p-3 shadow-lg">
+        <p className="font-medium text-sm mb-2">{label}</p>
+        {payload.map((entry: any, index: number) => (
+          <p key={index} style={{ color: entry.color }} className="text-sm">
+            {entry.name} : {formatNumber(entry.value)}
+          </p>
+        ))}
+      </div>
+    );
+  };
+
   if (data.length === 0) return null;
 
   return (
@@ -89,14 +128,13 @@ const RevenueChart = ({ data }: RevenueChartProps) => {
               stroke="hsl(215, 16%, 65%)" 
               fontSize={12}
             />
-            <YAxis stroke="hsl(215, 16%, 65%)" fontSize={12} />
-            <Tooltip
-              contentStyle={{
-                backgroundColor: 'hsl(0, 0%, 100%)',
-                border: '1px solid hsl(220, 13%, 91%)',
-                borderRadius: '8px',
-              }}
+            <YAxis 
+              stroke="hsl(215, 16%, 65%)" 
+              fontSize={12}
+              domain={yAxisDomain}
+              tickFormatter={formatNumber}
             />
+            <Tooltip content={<CustomTooltip />} />
             <Area type="monotone" dataKey="revenue" stroke="hsl(217, 91%, 60%)" strokeWidth={2} fill="url(#colorRevenue)" name="Доход" />
             <Area type="monotone" dataKey="costs" stroke="hsl(0, 91%, 59%)" strokeWidth={2} fill="url(#colorCosts)" name="Затраты" />
             {showMA7 && <Line type="monotone" dataKey="ma7_revenue" stroke="hsl(142, 76%, 36%)" strokeWidth={2} dot={false} name="MA7" />}
