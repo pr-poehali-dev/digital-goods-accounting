@@ -36,10 +36,10 @@ interface Bubble {
 }
 
 const importanceColors = {
-  low: '#6b7280',
-  medium: '#3b82f6',
-  high: '#f97316',
-  critical: '#ef4444'
+  low: '#94a3b8',
+  medium: '#60a5fa',
+  high: '#fb923c',
+  critical: '#f87171'
 };
 
 const ClientsBubbles = ({ clients, onClientUpdate }: Props) => {
@@ -219,19 +219,19 @@ const ClientsBubbles = ({ clients, onClientUpdate }: Props) => {
       <div className="space-y-4">
         <div className="flex items-center gap-6 text-sm">
           <div className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded-full" style={{ backgroundColor: '#6b7280' }} />
+            <div className="w-5 h-5 rounded-full" style={{ backgroundColor: '#94a3b8' }} />
             <span className="text-muted-foreground">Низкая</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded-full" style={{ backgroundColor: '#3b82f6' }} />
+            <div className="w-5 h-5 rounded-full" style={{ backgroundColor: '#60a5fa' }} />
             <span className="text-muted-foreground">Средняя</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded-full" style={{ backgroundColor: '#f97316' }} />
+            <div className="w-5 h-5 rounded-full" style={{ backgroundColor: '#fb923c' }} />
             <span className="text-muted-foreground">Высокая</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded-full" style={{ backgroundColor: '#ef4444' }} />
+            <div className="w-5 h-5 rounded-full" style={{ backgroundColor: '#f87171' }} />
             <span className="text-muted-foreground">Критичный</span>
           </div>
           <div className="ml-auto text-muted-foreground">
