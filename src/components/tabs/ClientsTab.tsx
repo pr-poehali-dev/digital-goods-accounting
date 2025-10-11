@@ -22,8 +22,7 @@ const ClientsTab = () => {
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [importanceFilter, setImportanceFilter] = useState<string>('all');
-  const [sortBy, setSortBy] = useState<'revenue' | 'recent'>('revenue');
+  const [selectedImportance, setSelectedImportance] = useState<Set<string>>(new Set(['all']));
 
   useEffect(() => {
     loadClients();
@@ -82,18 +81,33 @@ const ClientsTab = () => {
     importance: calculateAutoImportance(client, clients)
   }));
 
+  const toggleImportance = (importance: string) => {
+    const newSelected = new Set(selectedImportance);
+    if (importance === 'all') {
+      setSelectedImportance(new Set(['all']));
+    } else {
+      newSelected.delete('all');
+      if (newSelected.has(importance)) {
+        newSelected.delete(importance);
+      } else {
+        newSelected.add(importance);
+      }
+      if (newSelected.size === 0) {
+        setSelectedImportance(new Set(['all']));
+      } else {
+        setSelectedImportance(newSelected);
+      }
+    }
+  };
+
   const filteredClients = clientsWithAutoImportance
     .filter(client => {
       const matchesSearch = client.client_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         client.client_telegram?.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesImportance = importanceFilter === 'all' || client.importance === importanceFilter;
+      const matchesImportance = selectedImportance.has('all') || selectedImportance.has(client.importance);
       return matchesSearch && matchesImportance;
     })
-    .sort((a, b) => {
-      if (sortBy === 'revenue') return b.total_revenue - a.total_revenue;
-      if (sortBy === 'recent') return new Date(b.last_purchase).getTime() - new Date(a.last_purchase).getTime();
-      return 0;
-    });
+    .sort((a, b) => b.total_revenue - a.total_revenue);
 
   const stats = {
     total: clientsWithAutoImportance.length,
@@ -136,73 +150,50 @@ const ClientsTab = () => {
           </Button>
         </div>
 
-        <div className="flex items-center justify-between gap-4 flex-wrap">
-          <div className="flex items-center gap-2">
-            <Button
-              variant={importanceFilter === 'all' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setImportanceFilter('all')}
-            >
-              Все ({stats.total})
-            </Button>
-            <Button
-              variant={importanceFilter === 'critical' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setImportanceFilter('critical')}
-              className="gap-2"
-            >
-              <div className="w-3 h-3 rounded-full bg-red-500" />
-              Критичные ({stats.critical})
-            </Button>
-            <Button
-              variant={importanceFilter === 'high' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setImportanceFilter('high')}
-              className="gap-2"
-            >
-              <div className="w-3 h-3 rounded-full bg-orange-500" />
-              Высокая ({stats.high})
-            </Button>
-            <Button
-              variant={importanceFilter === 'medium' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setImportanceFilter('medium')}
-              className="gap-2"
-            >
-              <div className="w-3 h-3 rounded-full bg-blue-500" />
-              Средняя ({stats.medium})
-            </Button>
-            <Button
-              variant={importanceFilter === 'low' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setImportanceFilter('low')}
-              className="gap-2"
-            >
-              <div className="w-3 h-3 rounded-full bg-gray-400" />
-              Низкая ({stats.low})
-            </Button>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">Сортировка:</span>
-            <Button
-              variant={sortBy === 'revenue' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setSortBy('revenue')}
-            >
-              <Icon name="TrendingUp" size={16} />
-              По доходу
-            </Button>
-
-            <Button
-              variant={sortBy === 'recent' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setSortBy('recent')}
-            >
-              <Icon name="Clock" size={16} />
-              По дате
-            </Button>
-          </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button
+            variant={selectedImportance.has('all') ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => toggleImportance('all')}
+          >
+            Все ({stats.total})
+          </Button>
+          <Button
+            variant={selectedImportance.has('critical') ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => toggleImportance('critical')}
+            className="gap-2"
+          >
+            <div className="w-3 h-3 rounded-full bg-red-500" />
+            Критичные ({stats.critical})
+          </Button>
+          <Button
+            variant={selectedImportance.has('high') ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => toggleImportance('high')}
+            className="gap-2"
+          >
+            <div className="w-3 h-3 rounded-full bg-orange-500" />
+            Высокая ({stats.high})
+          </Button>
+          <Button
+            variant={selectedImportance.has('medium') ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => toggleImportance('medium')}
+            className="gap-2"
+          >
+            <div className="w-3 h-3 rounded-full bg-blue-500" />
+            Средняя ({stats.medium})
+          </Button>
+          <Button
+            variant={selectedImportance.has('low') ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => toggleImportance('low')}
+            className="gap-2"
+          >
+            <div className="w-3 h-3 rounded-full bg-gray-400" />
+            Низкая ({stats.low})
+          </Button>
         </div>
       </div>
 
