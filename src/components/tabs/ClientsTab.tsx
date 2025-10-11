@@ -41,6 +41,30 @@ const ClientsTab = () => {
     }
   };
 
+  const calculateAutoImportance = (client: Client, allClients: Client[]): 'low' | 'medium' | 'high' | 'critical' => {
+    const sortedByRevenue = [...allClients].sort((a, b) => b.total_revenue - a.total_revenue);
+    const sortedByPurchases = [...allClients].sort((a, b) => b.purchase_count - a.purchase_count);
+    const totalClients = allClients.length;
+    
+    const revenueIndex = sortedByRevenue.findIndex(c => 
+      c.client_telegram === client.client_telegram && 
+      c.client_name === client.client_name
+    );
+    const purchaseIndex = sortedByPurchases.findIndex(c => 
+      c.client_telegram === client.client_telegram && 
+      c.client_name === client.client_name
+    );
+    
+    const revenuePercent = (revenueIndex / totalClients) * 100;
+    const purchasePercent = (purchaseIndex / totalClients) * 100;
+    const bestPercent = Math.min(revenuePercent, purchasePercent);
+    
+    if (bestPercent < 5 || client.purchase_count >= 20) return 'critical';
+    if (bestPercent < 15 || client.purchase_count >= 10) return 'high';
+    if (bestPercent < 50 || client.purchase_count >= 5) return 'medium';
+    return 'low';
+  };
+
   const updateClient = async (clientId: number, updates: Partial<Client>) => {
     try {
       const res = await fetch('https://functions.poehali.dev/a6283aac-d0f5-49a0-9a1d-114c69ecf88d?action=update', {
@@ -60,7 +84,12 @@ const ClientsTab = () => {
     }
   };
 
-  const filteredClients = clients
+  const clientsWithAutoImportance = clients.map(client => ({
+    ...client,
+    importance: calculateAutoImportance(client, clients)
+  }));
+
+  const filteredClients = clientsWithAutoImportance
     .filter(client => {
       const matchesSearch = client.client_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         client.client_telegram?.toLowerCase().includes(searchQuery.toLowerCase());
@@ -75,11 +104,11 @@ const ClientsTab = () => {
     });
 
   const stats = {
-    total: clients.length,
-    critical: clients.filter(c => c.importance === 'critical').length,
-    high: clients.filter(c => c.importance === 'high').length,
-    medium: clients.filter(c => c.importance === 'medium').length,
-    low: clients.filter(c => c.importance === 'low').length,
+    total: clientsWithAutoImportance.length,
+    critical: clientsWithAutoImportance.filter(c => c.importance === 'critical').length,
+    high: clientsWithAutoImportance.filter(c => c.importance === 'high').length,
+    medium: clientsWithAutoImportance.filter(c => c.importance === 'medium').length,
+    low: clientsWithAutoImportance.filter(c => c.importance === 'low').length,
   };
 
   if (loading) {
