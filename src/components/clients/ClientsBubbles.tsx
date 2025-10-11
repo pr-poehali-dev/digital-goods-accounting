@@ -94,10 +94,8 @@ const ClientsBubbles = ({ clients, onClientUpdate }: Props) => {
           else if (bestPercent < 50 || client.purchase_count >= 5) autoImportance = 'medium';
           else autoImportance = 'low';
           
-          const finalImportance = client.importance !== 'medium' ? client.importance : autoImportance;
-          
           return {
-            client: { ...client, importance: finalImportance },
+            client: { ...client, importance: autoImportance },
             x: Math.random() * (width - radius * 2) + radius,
             y: Math.random() * (height - radius * 2) + radius,
             vx: (Math.random() - 0.5) * 2,
