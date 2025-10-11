@@ -65,10 +65,22 @@ const ClientsBubbles = ({ clients, onClientUpdate }: Props) => {
       canvas.height = height;
 
       if (bubblesRef.current.length === 0) {
+        const maxRevenue = Math.max(...clients.map(c => c.total_revenue), 1);
+        
         bubblesRef.current = clients.map((client) => {
           const radius = Math.max(30, Math.min(80, 30 + client.total_revenue / 300));
+          
+          let autoImportance = client.importance;
+          if (client.importance === 'medium') {
+            const revenuePercent = client.total_revenue / maxRevenue;
+            if (revenuePercent > 0.7) autoImportance = 'critical';
+            else if (revenuePercent > 0.4) autoImportance = 'high';
+            else if (revenuePercent > 0.15) autoImportance = 'medium';
+            else autoImportance = 'low';
+          }
+          
           return {
-            client,
+            client: { ...client, importance: autoImportance },
             x: Math.random() * (width - radius * 2) + radius,
             y: Math.random() * (height - radius * 2) + radius,
             vx: (Math.random() - 0.5) * 2,
@@ -180,14 +192,26 @@ const ClientsBubbles = ({ clients, onClientUpdate }: Props) => {
         const displayName = bubble.client.client_name || bubble.client.client_telegram || 'Без имени';
         const shortName = displayName.length > 10 ? displayName.slice(0, 10) + '...' : displayName;
 
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+        ctx.shadowBlur = 4;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 2;
+
         ctx.fillStyle = '#ffffff';
-        ctx.font = `bold ${Math.max(12, bubble.radius / 4)}px system-ui, -apple-system, sans-serif`;
+        ctx.font = `bold ${Math.max(13, bubble.radius / 3.5)}px system-ui, -apple-system, sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(shortName, bubble.x, bubble.y - 5);
 
-        ctx.font = `${Math.max(10, bubble.radius / 5)}px system-ui, -apple-system, sans-serif`;
+        ctx.shadowBlur = 3;
+        ctx.shadowOffsetY = 1;
+        ctx.font = `600 ${Math.max(11, bubble.radius / 4.5)}px system-ui, -apple-system, sans-serif`;
         ctx.fillText(`${bubble.client.purchase_count} покупок`, bubble.x, bubble.y + bubble.radius + 18);
+        
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 0;
       });
 
       animationRef.current = requestAnimationFrame(animate);
