@@ -1,0 +1,24 @@
+{
+  "tests": [
+    {
+      "name": "Get clients list",
+      "method": "GET",
+      "path": "/?action=list",
+      "expectedStatus": 200,
+      "expectedBody": {
+        "clients": "array"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Get client connections",
+      "method": "GET",
+      "path": "/?action=connections",
+      "expectedStatus": 200,
+      "expectedBody": {
+        "connections": "array"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

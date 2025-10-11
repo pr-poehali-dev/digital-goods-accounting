@@ -9,6 +9,7 @@ import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import OverviewTab from '@/components/tabs/OverviewTab';
 import TransactionsTab from '@/components/tabs/TransactionsTab';
 import AnalyticsTab from '@/components/tabs/AnalyticsTab';
+import ClientsTab from '@/components/tabs/ClientsTab';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { useCurrencyConversion } from '@/hooks/useCurrencyConversion';
 import { useDashboardMetrics } from '@/hooks/useDashboardMetrics';
@@ -160,6 +161,10 @@ const Index = () => {
               <Icon name="TrendingUp" size={16} />
               Аналитика
             </TabsTrigger>
+            <TabsTrigger value="clients" className="gap-2">
+              <Icon name="Users" size={16} />
+              Клиенты
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview">
@@ -208,6 +213,10 @@ const Index = () => {
 
           <TabsContent value="expenses">
             <ExpenseManager />
+          </TabsContent>
+
+          <TabsContent value="clients">
+            <ClientsTab />
           </TabsContent>
         </Tabs>
       </div>
