@@ -37,7 +37,11 @@ const OverviewTab = ({
 
       <StatsCards stats={{...convertedStats, total_costs: actualTotalCosts}} formatCurrency={formatCurrency} />
 
-      <AverageMetrics data={averageMetrics} formatCurrency={formatCurrency} />
+      <AverageMetrics 
+        data={averageMetrics} 
+        formatCurrency={formatCurrency}
+        dailyAnalytics={convertedStats.daily_analytics}
+      />
 
       <RevenueChart data={dailyChartData} />
     </div>
