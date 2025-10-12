@@ -83,7 +83,7 @@ const ProfitDynamicsChart = ({ data, grouping, onGroupingChange }: ProfitDynamic
                 borderRadius: '8px',
               }}
             />
-            <Bar dataKey="profit" fill="hsl(142, 76%, 36%)" radius={[8, 8, 0, 0]} name="Прибыль" />
+            <Bar dataKey="net_profit" fill="hsl(142, 76%, 36%)" radius={[8, 8, 0, 0]} name="Чистая прибыль" />
           </BarChart>
         </ResponsiveContainer>
       </CardContent>
