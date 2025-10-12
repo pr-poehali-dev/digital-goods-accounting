@@ -40,12 +40,14 @@ export const useDashboardMetrics = (convertedStats: any) => {
     const days = convertedStats.daily_analytics.length;
     const totalCount = convertedStats.daily_analytics.reduce((sum: number, d: any) => sum + (d.count || 0), 0);
     const totalProfit = convertedStats.daily_analytics.reduce((sum: number, d: any) => sum + (d.profit || 0), 0);
+    const totalExpenses = convertedStats.daily_analytics.reduce((sum: number, d: any) => sum + (d.expenses || 0), 0);
+    const totalNetProfit = totalProfit - totalExpenses;
     const totalRevenue = convertedStats.daily_analytics.reduce((sum: number, d: any) => sum + (d.revenue || 0), 0);
     const totalCosts = totalRevenue - totalProfit;
 
     return {
       avgSalesPerDay: totalCount / days,
-      avgProfitPerDay: totalProfit / days,
+      avgProfitPerDay: totalNetProfit / days,
       avgCheck: totalCount > 0 ? totalRevenue / totalCount : 0,
       avgMargin: totalCosts > 0 ? totalRevenue / totalCosts : 0
     };
