@@ -64,7 +64,9 @@ export const useDashboardMetrics = (convertedStats: any) => {
           break;
         case 'week':
           const weekStart = new Date(date);
-          weekStart.setDate(date.getDate() - date.getDay() + 1);
+          const dayOfWeek = weekStart.getDay();
+          const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+          weekStart.setDate(weekStart.getDate() + diff);
           key = `Нед ${weekStart.toLocaleDateString('ru', { day: 'numeric', month: 'short' })}`;
           break;
         case 'month':
