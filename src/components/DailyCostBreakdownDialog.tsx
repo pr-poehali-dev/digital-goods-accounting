@@ -97,7 +97,7 @@ const DailyCostBreakdownDialog = ({
                 <CardContent className="pt-6">
                   <div className="text-sm text-muted-foreground">Себестоимость</div>
                   <div className="text-2xl font-bold text-red-600">
-                    {formatCurrency(data.total_transaction_costs)}
+                    {formatCurrency(data.total_transaction_costs || 0)}
                   </div>
                 </CardContent>
               </Card>
@@ -106,7 +106,7 @@ const DailyCostBreakdownDialog = ({
                 <CardContent className="pt-6">
                   <div className="text-sm text-muted-foreground">Расходы</div>
                   <div className="text-2xl font-bold text-orange-600">
-                    {formatCurrency(data.total_expenses)}
+                    {formatCurrency(data.total_expenses || 0)}
                   </div>
                 </CardContent>
               </Card>
@@ -115,7 +115,7 @@ const DailyCostBreakdownDialog = ({
                 <CardContent className="pt-6">
                   <div className="text-sm text-muted-foreground">Всего затрат</div>
                   <div className="text-2xl font-bold">
-                    {formatCurrency(data.total_costs)}
+                    {formatCurrency(data.total_costs || 0)}
                   </div>
                 </CardContent>
               </Card>
@@ -148,10 +148,10 @@ const DailyCostBreakdownDialog = ({
                         </div>
                         <div className="text-right">
                           <div className="font-semibold text-red-600">
-                            {formatCurrency(item.cost_price)}
+                            {formatCurrency(item.cost_price || 0)}
                           </div>
                           <div className="text-xs text-muted-foreground">
-                            Выручка: {formatCurrency(item.amount)}
+                            Выручка: {formatCurrency(item.amount || 0)}
                           </div>
                         </div>
                       </div>
@@ -195,7 +195,7 @@ const DailyCostBreakdownDialog = ({
                         </div>
                         <div className="text-right">
                           <div className="font-semibold text-orange-600">
-                            {formatCurrency(expense.amount)}
+                            {formatCurrency(expense.amount || 0)}
                           </div>
                           {expense.distribution_type === 'distributed' && (
                             <div className="text-xs text-muted-foreground">
