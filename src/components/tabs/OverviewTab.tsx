@@ -34,7 +34,7 @@ const OverviewTab = ({
         dateFilter={dateFilter}
         customDateRange={customDateRange}
         onDateFilterChange={onDateFilterChange}
-        onCustomDateChange={onCustomDateRange}
+        onCustomDateChange={onCustomDateChange}
         exchangeRate={exchangeRate}
         formatCurrency={formatCurrency}
       />
