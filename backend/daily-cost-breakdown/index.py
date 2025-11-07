@@ -76,8 +76,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     for row in cur.fetchall():
         trans_id, code, product, amount, cost_price, currency, client = row
         
-        amount_rub = amount * exchange_rate if currency == 'USD' else amount
-        cost_rub = cost_price * exchange_rate if currency == 'USD' else cost_price
+        amount_rub = float(amount) * exchange_rate if currency == 'USD' else float(amount)
+        cost_rub = float(cost_price) * exchange_rate if currency == 'USD' else float(cost_price)
         
         result['transaction_costs'].append({
             'id': trans_id,
