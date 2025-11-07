@@ -13,6 +13,7 @@ export const useDashboardMetrics = (convertedStats: any) => {
       
       return {
         date: new Date(day.date).toLocaleDateString('ru', { day: 'numeric', month: 'short' }),
+        originalDate: day.date,
         revenue: Math.round(dayRevenue),
         costs: Math.round(dayCosts),
         profit: Math.round(dayProfit),

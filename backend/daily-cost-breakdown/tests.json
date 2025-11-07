@@ -1,0 +1,29 @@
+{
+  "tests": [
+    {
+      "name": "Get daily cost breakdown",
+      "method": "GET",
+      "path": "/?date=2025-11-01&exchange_rate=82",
+      "expectedStatus": 200,
+      "expectedBody": {
+        "date": "string",
+        "transaction_costs": "array",
+        "expenses": "array",
+        "total_transaction_costs": "number",
+        "total_expenses": "number",
+        "total_costs": "number"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Missing date parameter",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 400,
+      "expectedBody": {
+        "error": "string"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

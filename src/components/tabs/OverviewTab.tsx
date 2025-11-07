@@ -13,6 +13,7 @@ interface OverviewTabProps {
   formatCurrency: (amount: number) => string;
   averageMetrics: any;
   dailyChartData: any[];
+  exchangeRate: number;
 }
 
 const OverviewTab = ({
@@ -24,7 +25,8 @@ const OverviewTab = ({
   actualTotalCosts,
   formatCurrency,
   averageMetrics,
-  dailyChartData
+  dailyChartData,
+  exchangeRate
 }: OverviewTabProps) => {
   return (
     <div className="space-y-6">
@@ -32,7 +34,9 @@ const OverviewTab = ({
         dateFilter={dateFilter}
         customDateRange={customDateRange}
         onDateFilterChange={onDateFilterChange}
-        onCustomDateChange={onCustomDateChange}
+        onCustomDateChange={onCustomDateRange}
+        exchangeRate={exchangeRate}
+        formatCurrency={formatCurrency}
       />
 
       <StatsCards stats={{...convertedStats, total_costs: actualTotalCosts}} formatCurrency={formatCurrency} />
@@ -43,7 +47,7 @@ const OverviewTab = ({
         dailyAnalytics={convertedStats.daily_analytics}
       />
 
-      <RevenueChart data={dailyChartData} />
+      <RevenueChart data={dailyChartData} exchangeRate={exchangeRate} formatCurrency={formatCurrency} />
     </div>
   );
 };

@@ -178,6 +178,7 @@ const Index = () => {
               formatCurrency={formatCurrency}
               averageMetrics={averageMetrics}
               dailyChartData={dailyChartData}
+              exchangeRate={exchangeRate}
             />
           </TabsContent>
 

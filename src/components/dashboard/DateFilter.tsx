@@ -2,24 +2,29 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import Icon from '@/components/ui/icon';
+import DailyBreakdownButton from './DailyBreakdownButton';
 
 interface DateFilterProps {
   dateFilter: 'today' | 'week' | 'month' | 'quarter' | 'year' | 'all' | 'custom';
   customDateRange: { start: string; end: string };
   onDateFilterChange: (filter: 'today' | 'week' | 'month' | 'quarter' | 'year' | 'all' | 'custom') => void;
   onCustomDateChange: (range: { start: string; end: string }) => void;
+  exchangeRate?: number;
+  formatCurrency?: (amount: number) => string;
 }
 
 const DateFilter = ({ 
   dateFilter, 
   customDateRange, 
   onDateFilterChange, 
-  onCustomDateChange 
+  onCustomDateChange,
+  exchangeRate = 82,
+  formatCurrency = (v) => v.toString()
 }: DateFilterProps) => {
   return (
     <Card className="mb-6">
       <CardContent className="pt-6">
-        <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
+        <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
           <div className="flex gap-2 flex-wrap">
             <Button 
               variant={dateFilter === 'all' ? 'default' : 'outline'} 
@@ -96,6 +101,11 @@ const DateFilter = ({
               />
             </div>
           )}
+          
+          <DailyBreakdownButton
+            exchangeRate={exchangeRate}
+            formatCurrency={formatCurrency}
+          />
         </div>
       </CardContent>
     </Card>

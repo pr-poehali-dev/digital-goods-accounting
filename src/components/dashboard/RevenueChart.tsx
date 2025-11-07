@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
 import { AreaChart, Area, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer, Line, ComposedChart, ReferenceDot, Label } from 'recharts';
 import { useState, useMemo } from 'react';
+import DailyCostBreakdownDialog from '@/components/DailyCostBreakdownDialog';
 
 interface RevenueChartProps {
   data: Array<{
@@ -10,13 +11,18 @@ interface RevenueChartProps {
     revenue: number;
     costs: number;
     profit: number;
+    originalDate?: string;
   }>;
+  exchangeRate: number;
+  formatCurrency: (amount: number) => string;
 }
 
-const RevenueChart = ({ data }: RevenueChartProps) => {
+const RevenueChart = ({ data, exchangeRate, formatCurrency }: RevenueChartProps) => {
   const [showMA7, setShowMA7] = useState(false);
   const [showMA30, setShowMA30] = useState(false);
   const [showMA90, setShowMA90] = useState(false);
+  const [breakdownDialogOpen, setBreakdownDialogOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<string>('');
 
   const calculateMA = (data: any[], period: number, key: string) => {
     return data.map((item, idx) => {
@@ -79,6 +85,15 @@ const RevenueChart = ({ data }: RevenueChartProps) => {
     return Math.round(value).toString();
   };
 
+  const handlePointClick = (data: any) => {
+    if (data && data.activePayload && data.activePayload[0]) {
+      const clickedData = data.activePayload[0].payload;
+      const originalDate = clickedData.originalDate || clickedData.date;
+      setSelectedDate(originalDate);
+      setBreakdownDialogOpen(true);
+    }
+  };
+
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (!active || !payload || !payload.length) return null;
 
@@ -86,8 +101,15 @@ const RevenueChart = ({ data }: RevenueChartProps) => {
     if (!dataPoint) return null;
 
     return (
-      <div className="bg-white border border-gray-200 rounded-lg p-3 shadow-lg">
-        <p className="font-medium text-sm mb-2">{label}</p>
+      <div className="bg-white border border-gray-200 rounded-lg p-3 shadow-lg cursor-pointer hover:shadow-xl transition-shadow" onClick={() => {
+        const originalDate = dataPoint.originalDate || dataPoint.date;
+        setSelectedDate(originalDate);
+        setBreakdownDialogOpen(true);
+      }}>
+        <p className="font-medium text-sm mb-2 flex items-center gap-1">
+          {label}
+          <Icon name="MousePointerClick" size={14} className="text-muted-foreground" />
+        </p>
         <p className="text-sm" style={{ color: 'hsl(217, 91%, 60%)' }}>
           Доход: {formatNumber(dataPoint.revenue)}
           {dataPoint.hasAnomaly && <span className="ml-1 text-orange-500">⚠️</span>}
@@ -104,6 +126,9 @@ const RevenueChart = ({ data }: RevenueChartProps) => {
             ))}
           </>
         )}
+        <p className="text-xs text-muted-foreground mt-2 border-t pt-1">
+          Нажмите для детализации
+        </p>
       </div>
     );
   };
@@ -145,7 +170,7 @@ const RevenueChart = ({ data }: RevenueChartProps) => {
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>
-          <ComposedChart data={chartData}>
+          <ComposedChart data={chartData} onClick={handlePointClick}>
             <defs>
               <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="hsl(217, 91%, 60%)" stopOpacity={0.3} />
@@ -204,6 +229,14 @@ const RevenueChart = ({ data }: RevenueChartProps) => {
           </div>
         )}
       </CardContent>
+      
+      <DailyCostBreakdownDialog
+        open={breakdownDialogOpen}
+        onOpenChange={setBreakdownDialogOpen}
+        date={selectedDate}
+        exchangeRate={exchangeRate}
+        formatCurrency={formatCurrency}
+      />
     </Card>
   );
 };
