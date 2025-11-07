@@ -125,15 +125,15 @@ const DailyCostBreakdownDialog = ({
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <Icon name="ShoppingCart" size={18} />
-                  Себестоимость товаров ({data.transaction_costs.length})
+                  Себестоимость товаров ({data.transaction_costs?.length || 0})
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {data.transaction_costs.length === 0 ? (
+                {!data.transaction_costs || data.transaction_costs.length === 0 ? (
                   <p className="text-sm text-muted-foreground">Нет транзакций за этот день</p>
                 ) : (
                   <div className="space-y-3">
-                    {data.transaction_costs.map((item) => (
+                    {data.transaction_costs?.map((item) => (
                       <div key={item.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
@@ -165,15 +165,15 @@ const DailyCostBreakdownDialog = ({
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <Icon name="Receipt" size={18} />
-                  Расходные транзакции ({data.expenses.length})
+                  Расходные транзакции ({data.expenses?.length || 0})
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {data.expenses.length === 0 ? (
+                {!data.expenses || data.expenses.length === 0 ? (
                   <p className="text-sm text-muted-foreground">Нет расходов за этот день</p>
                 ) : (
                   <div className="space-y-3">
-                    {data.expenses.map((expense) => (
+                    {data.expenses?.map((expense) => (
                       <div key={expense.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
